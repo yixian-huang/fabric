@@ -98,6 +98,7 @@ cp "$ROOT/deploy/nginx/nginx.conf" "$RELEASE_DIR/nginx.conf"
 cp "$ROOT/deploy/.env.example" "$RELEASE_DIR/env.example"
 cp "$ROOT/deploy/install.sh" "$RELEASE_DIR/install.sh"
 cp "$ROOT/scripts/install-lib.sh" "$RELEASE_DIR/install-lib.sh"
+cp "$ROOT/scripts/install-lib-compose.sh" "$RELEASE_DIR/install-lib-compose.sh"
 chmod +x "$RELEASE_DIR/install.sh"
 inject_install_base_default "$RELEASE_DIR/install.sh" "$FABRIC_INSTALL_BASE"
 

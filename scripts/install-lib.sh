@@ -2,6 +2,10 @@
 # 安装脚本共享库：交互式前置配置 + .env 写入
 # 被 install.sh / deploy/install.sh source
 
+_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=install-lib-compose.sh
+source "$_LIB_DIR/install-lib-compose.sh"
+
 install_lib_prompt() {
   local var="$1"
   local label="$2"
@@ -68,7 +72,71 @@ install_lib_load_env_defaults() {
   JWT_SECRET="${JWT_SECRET:-change-me-jwt-secret}"
   BOOTSTRAP_ADMIN_USER="${BOOTSTRAP_ADMIN_USER:-admin}"
   BOOTSTRAP_ADMIN_PASSWORD="${BOOTSTRAP_ADMIN_PASSWORD:-change-me-admin}"
-  STORAGE_MODE="${STORAGE_MODE:-embedded-minio}"
+  FABRIC_DB_PROFILE="${FABRIC_DB_PROFILE:-embedded}"
+  FABRIC_STORAGE_PROFILE="${FABRIC_STORAGE_PROFILE:-local}"
+  STORAGE_MODE="${STORAGE_MODE:-local}"
+  DATABASE_MODE="${DATABASE_MODE:-embedded}"
+  POSTGRES_DSN="${POSTGRES_DSN:-}"
+}
+
+install_lib_apply_stack_defaults() {
+  case "${FABRIC_DB_PROFILE}" in
+    embedded|setup|external) ;;
+    *) FABRIC_DB_PROFILE=embedded ;;
+  esac
+  case "${FABRIC_STORAGE_PROFILE}" in
+    local|minio|external-s3|setup) ;;
+    *) FABRIC_STORAGE_PROFILE=local ;;
+  esac
+  if [[ "${FABRIC_STORAGE_PROFILE}" == "minio" ]]; then
+    STORAGE_MODE=embedded-minio
+  elif [[ "${FABRIC_STORAGE_PROFILE}" == "external-s3" ]]; then
+    STORAGE_MODE=external-s3
+  else
+    STORAGE_MODE=local
+  fi
+  if [[ "${FABRIC_DB_PROFILE}" == "external" ]]; then
+    DATABASE_MODE=external
+  else
+    DATABASE_MODE=embedded
+  fi
+}
+
+install_lib_interactive_stack_profiles() {
+  local db_input storage_input
+  echo ""
+  echo "  数据库（当前后端仅支持 PostgreSQL，不支持 SQLite）"
+  echo "    1) embedded   内置 PostgreSQL 容器（推荐新装）"
+  echo "    2) external   已有 PostgreSQL，安装时填写连接串"
+  echo "    3) setup       先用内置库启动，稍后在 /setup 页面改外部库"
+  db_input="$(install_lib_prompt FABRIC_DB "请选择 [1/2/3]" "1")"
+  case "$db_input" in
+    2|external)
+      FABRIC_DB_PROFILE=external
+      POSTGRES_DSN="$(install_lib_prompt POSTGRES_DSN "POSTGRES_DSN" "postgres://fabric:password@host:5432/fabric?sslmode=disable")"
+      ;;
+    3|setup)
+      FABRIC_DB_PROFILE=setup
+      ;;
+    *)
+      FABRIC_DB_PROFILE=embedded
+      ;;
+  esac
+
+  echo ""
+  echo "  文件/对象存储"
+  echo "    1) local         磁盘目录（推荐，镜像最少）"
+  echo "    2) minio         内置 MinIO"
+  echo "    3) external-s3   外部 S3 / RustFS（安装后 /setup 填 endpoint）"
+  echo "    4) setup         先用本地磁盘，稍后在 /setup 配置"
+  storage_input="$(install_lib_prompt FABRIC_STORAGE "请选择 [1/2/3/4]" "1")"
+  case "$storage_input" in
+    2|minio) FABRIC_STORAGE_PROFILE=minio ;;
+    3|external-s3|rustfs|s3) FABRIC_STORAGE_PROFILE=external-s3 ;;
+    4|setup) FABRIC_STORAGE_PROFILE=setup ;;
+    *) FABRIC_STORAGE_PROFILE=local ;;
+  esac
+  install_lib_apply_stack_defaults
 }
 
 install_lib_interactive_configure() {
@@ -120,21 +188,14 @@ install_lib_interactive_configure() {
     BOOTSTRAP_ADMIN_PASSWORD="change-me-admin"
   fi
 
-  echo ""
-  echo "  图片存储（安装后还可在 /setup 中修改）"
-  echo "    1) embedded-minio  内置 MinIO（推荐）"
-  echo "    2) local           本机磁盘"
-  storage_input="$(install_lib_prompt STORAGE "请选择 [1/2]" "1")"
-  case "$storage_input" in
-    2|local) STORAGE_MODE="local" ;;
-    *) STORAGE_MODE="embedded-minio" ;;
-  esac
+  install_lib_interactive_stack_profiles
 
   echo ""
   info_msg "配置摘要:"
   echo "  访问端口:     ${HTTP_PORT}"
   echo "  管理员:       ${BOOTSTRAP_ADMIN_USER}"
-  echo "  图片存储:     ${STORAGE_MODE}"
+  echo "  数据库:       ${FABRIC_DB_PROFILE} (${DATABASE_MODE})"
+  echo "  存储:         ${FABRIC_STORAGE_PROFILE} (${STORAGE_MODE})"
   echo ""
 
   local confirm confirm_lower
@@ -149,11 +210,16 @@ install_lib_interactive_configure() {
 }
 
 install_lib_finalize_secrets() {
-  if [[ "${POSTGRES_PASSWORD}" == "change-me-postgres" || -z "${POSTGRES_PASSWORD}" ]]; then
-    POSTGRES_PASSWORD="$(install_lib_random_secret)"
+  install_lib_apply_stack_defaults
+  if [[ "${FABRIC_DB_PROFILE}" == "embedded" || "${FABRIC_DB_PROFILE}" == "setup" ]]; then
+    if [[ "${POSTGRES_PASSWORD}" == "change-me-postgres" || -z "${POSTGRES_PASSWORD}" ]]; then
+      POSTGRES_PASSWORD="$(install_lib_random_secret)"
+    fi
   fi
-  if [[ "${MINIO_ROOT_PASSWORD}" == "change-me-minio" || -z "${MINIO_ROOT_PASSWORD}" ]]; then
-    MINIO_ROOT_PASSWORD="$(install_lib_random_secret)"
+  if [[ "${FABRIC_STORAGE_PROFILE}" == "minio" ]]; then
+    if [[ "${MINIO_ROOT_PASSWORD}" == "change-me-minio" || -z "${MINIO_ROOT_PASSWORD}" ]]; then
+      MINIO_ROOT_PASSWORD="$(install_lib_random_secret)"
+    fi
   fi
   if [[ "${JWT_SECRET}" == "change-me-jwt-secret" || -z "${JWT_SECRET}" ]]; then
     JWT_SECRET="$(install_lib_random_secret)"
@@ -178,16 +244,20 @@ MINIO_BUCKET=${MINIO_BUCKET}
 JWT_SECRET=${JWT_SECRET}
 BOOTSTRAP_ADMIN_USER=${BOOTSTRAP_ADMIN_USER}
 BOOTSTRAP_ADMIN_PASSWORD=${BOOTSTRAP_ADMIN_PASSWORD}
+FABRIC_DB_PROFILE=${FABRIC_DB_PROFILE}
+FABRIC_STORAGE_PROFILE=${FABRIC_STORAGE_PROFILE}
+DATABASE_MODE=${DATABASE_MODE}
 STORAGE_MODE=${STORAGE_MODE}
+POSTGRES_DSN=${POSTGRES_DSN}
 EOF
 }
 
 install_lib_print_noninteractive_hint() {
-  warn_msg "非交互模式（管道安装或未连接 TTY），使用默认配置。"
-  echo "  自定义示例:"
-  echo "    curl -fsSL .../install.sh | bash -s -- --port 9000 --admin-user admin"
-  echo "    curl -fsSL .../install.sh -o install.sh && bash install.sh   # 交互式"
-  echo "  环境变量: HTTP_PORT=9000 BOOTSTRAP_ADMIN_USER=admin FABRIC_NONINTERACTIVE=1"
+  install_lib_apply_stack_defaults
+  warn_msg "非交互模式：默认 内置 PostgreSQL + 本地磁盘存储（不拉 MinIO/mc）。"
+  echo "  交互式安装: curl -fsSL .../install.sh -o install.sh && bash install.sh"
+  echo "  参数示例:"
+  echo "    --db embedded|external|setup --storage local|minio|external-s3|setup"
   echo ""
 }
 
@@ -204,7 +274,7 @@ install_lib_print_success() {
   echo "  健康检查:      http://${host}:${port}/healthz"
   echo ""
   echo "  默认管理员:    ${BOOTSTRAP_ADMIN_USER} / ${BOOTSTRAP_ADMIN_PASSWORD}"
-  echo "  图片存储:      ${STORAGE_MODE}（/setup 中可再改）"
+  echo "  数据库/存储:   ${FABRIC_DB_PROFILE} / ${FABRIC_STORAGE_PROFILE}（/setup 可再改）"
   echo ""
   echo "  修改端口:      编辑 .env 中 HTTP_PORT 后执行 ${compose_hint} up -d"
   echo "  停止服务:      ${compose_hint} down"

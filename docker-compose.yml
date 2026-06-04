@@ -42,7 +42,7 @@ services:
       - fabric_minio_data:/data
 
   minio-init:
-    image: minio/mc:RELEASE.2024-11-17T19-35-32Z
+    image: minio/mc:latest
     container_name: fabric-minio-init
     depends_on:
       minio:

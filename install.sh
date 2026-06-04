@@ -49,7 +49,9 @@ parse_args() {
       --port|-p) HTTP_PORT="$2"; shift 2 ;;
       --admin-user) BOOTSTRAP_ADMIN_USER="$2"; shift 2 ;;
       --admin-password) BOOTSTRAP_ADMIN_PASSWORD="$2"; shift 2 ;;
-      --storage) STORAGE_MODE="$2"; shift 2 ;;
+      --db) FABRIC_DB_PROFILE="$2"; shift 2 ;;
+      --storage) FABRIC_STORAGE_PROFILE="$2"; shift 2 ;;
+      --postgres-dsn) POSTGRES_DSN="$2"; shift 2 ;;
       -y|--yes) FABRIC_YES=1; shift ;;
       -h|--help) usage; exit 0 ;;
       *) error "未知参数: $1"; usage; exit 1 ;;
@@ -104,7 +106,10 @@ prepare_env() {
   fi
 
   install_lib_write_env_file .env
-  info "配置已写入 .env"
+  install_lib_generate_compose docker-compose.yml
+  install_lib_compose_services_to_pull
+  info "配置已写入 .env（数据库=${FABRIC_DB_PROFILE} 存储=${FABRIC_STORAGE_PROFILE}）"
+  info "将启动服务: ${COMPOSE_PULL_SERVICES[*]}"
   # shellcheck disable=SC1091
   set -a && source .env && set +a
 }
@@ -126,7 +131,7 @@ main() {
   prepare_env
 
   info "构建并启动服务..."
-  "${COMPOSE[@]}" up -d --build
+  "${COMPOSE[@]}" up -d --build "${COMPOSE_PULL_SERVICES[@]}"
 
   wait_for_api || true
 
