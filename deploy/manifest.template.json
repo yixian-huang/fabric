@@ -1,0 +1,16 @@
+{
+  "version": "0.0.0",
+  "released_at": "",
+  "install_base": "https://get.fabricoption.com",
+  "registry": "ghcr.io/yixian-huang",
+  "images": {
+    "api": "ghcr.io/yixian-huang/fabric-api:0.0.0",
+    "web": "ghcr.io/yixian-huang/fabric-web:0.0.0",
+    "table": "ghcr.io/yixian-huang/fabric-table:0.0.0"
+  },
+  "files": {
+    "docker-compose.yml": "",
+    "nginx.conf": "",
+    "env.example": ""
+  }
+}

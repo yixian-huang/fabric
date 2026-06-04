@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>邮箱验证 - {{ site_name }}</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .email-container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 40px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #64748b;
+            margin-bottom: 10px;
+        }
+        .title {
+            font-size: 20px;
+            color: #1f2937;
+            margin-bottom: 20px;
+        }
+        .content {
+            font-size: 16px;
+            color: #4b5563;
+            margin-bottom: 30px;
+        }
+        .verification-button {
+            display: inline-block;
+            background-color: #3b82f6;
+            color: #ffffff;
+            padding: 12px 30px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .verification-button:hover {
+            background-color: #2563eb;
+        }
+        .link-section {
+            background-color: #f8fafc;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #3b82f6;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 14px;
+            color: #6b7280;
+            text-align: center;
+        }
+        .warning {
+            background-color: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <div class="logo">{{ site_name }}</div>
+            <h1 class="title">邮箱验证</h1>
+        </div>
+        
+        <div class="content">
+            <p>亲爱的 <strong>{{ username }}</strong>：</p>
+            
+            <p>感谢您注册 {{ site_name }}！</p>
+            
+            <p>为了确保您的账号安全，请点击下方按钮验证您的邮箱地址：</p>
+            
+            <div style="text-align: center;">
+                <a href="{{ verification_url }}" class="verification-button">验证邮箱地址</a>
+            </div>
+            
+            <div class="link-section">
+                <p><strong>如果按钮无法点击，请复制以下链接到浏览器地址栏：</strong></p>
+                <p style="word-break: break-all; color: #3b82f6;">{{ verification_url }}</p>
+            </div>
+            
+            <div class="warning">
+                <p><strong>重要提醒：</strong></p>
+                <ul>
+                    <li>该验证链接将在 {{ expires_hours }} 小时后过期</li>
+                    <li>如果您没有注册账号，请忽略此邮件</li>
+                    <li>请勿将此邮件转发给他人</li>
+                </ul>
+            </div>
+            
+            <p>验证成功后，您就可以开始探索我们的面料世界了！</p>
+        </div>
+        
+        <div class="footer">
+            <p>此邮件由系统自动发送，请勿回复。</p>
+            <p>如有疑问，请联系我们的客服团队。</p>
+            <p>&copy; {{ site_name }} 团队</p>
+        </div>
+    </div>
+</body>
+</html>

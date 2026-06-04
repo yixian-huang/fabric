@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}图片上传服务{% endblock %}</title>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <header>
+        <h1>图片上传服务</h1>
+    </header>
+    
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    
+    <footer>
+        <p>&copy; {% now "Y" %} 图片上传服务</p>
+    </footer>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html> 

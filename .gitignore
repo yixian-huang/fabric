@@ -1,0 +1,60 @@
+# --- secrets & local env ---
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# --- release / build artifacts ---
+dist/
+build/
+coverage/
+
+# --- Node (todo-web, todo-table) ---
+node_modules/
+.pnp
+.pnp.js
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.tsbuildinfo
+
+# --- Python (todo-server) ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+*.egg-info/
+.eggs/
+db.sqlite3
+todo-server/media/
+todo-server/staticfiles/
+todo-server/logs/
+
+# --- Go (todo-server-go) ---
+todo-server-go/bin/
+todo-server-go/*.exe
+todo-server-go/*.test
+todo-server-go/coverage.out
+todo-server-go/coverage.html
+
+# --- IDE & OS ---
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.tmp
+*.temp
+*.zip
+
+# --- local / agent tooling (not for repo) ---
+.playwright-cli/
+.specstory/
+shadow_run_report.txt
+
+# --- editor (keep shared .vscode settings if present) ---
+# Subprojects may un-ignore via their own .gitignore

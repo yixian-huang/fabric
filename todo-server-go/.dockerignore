@@ -1,0 +1,11 @@
+.git
+.gitignore
+*.md
+shadow_run_report.txt
+scripts/
+benchmarks/
+docs/
+docker-compose.yml
+Makefile
+sqlc.yaml
+db/queries/

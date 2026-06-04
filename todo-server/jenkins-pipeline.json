@@ -1,0 +1,90 @@
+pipeline {
+    agent any
+    options {
+        /* 在每一行输出前加 [HH:mm:ss]，便于溯源 */
+        timestamps()
+    }
+    environment {
+        REMOTE_SERVER = 'root@92.205.17.202'
+        REMOTE_SSH_PORT = '57122'
+        SSH_OPTS = '-o StrictHostKeyChecking=no -p ${REMOTE_SSH_PORT}'
+        SCP_OPTS = '-o StrictHostKeyChecking=no -P ${REMOTE_SSH_PORT}'
+        REMOTE_PROJECT_DIR = '/opt/django/todo-server'
+        VENV_PATH = '/opt/django/venv'
+        PROJECT_NAME = 'fabric'  // Django项目名称
+        DEPLOY_SCRIPT      = '/opt/django/todo-server/deploy.sh'
+    }
+
+    stages {
+        stage('检出代码') {
+		   steps {
+                git branch: 'main',
+                    credentialsId: 'github',
+                    url: 'https://github.com/Hysian/todo-server.git'
+
+            }
+        }
+        stage('传输代码') {
+            steps {
+                sshagent(['1d2704a7-7dcf-40ed-82c2-ab8d3274dbc9']) {
+
+                    // 确保远程目录存在
+
+                    sh "ssh ${SSH_OPTS} ${REMOTE_SERVER} 'mkdir -p ${REMOTE_PROJECT_DIR}'"
+
+                    // 直接创建tar包，无需先复制到临时目录
+
+                    sh """
+
+                        # 直接从当前目录创建tar包，排除不需要的文件
+
+                        tar -czf project.tar.gz --warning=no-file-changed --exclude='.git' --exclude='*.pyc' --exclude='__pycache__' --exclude='venv' --exclude='env' --exclude='temp_dir' --exclude='project.tar.gz' .
+
+                    """
+
+                    // 传输tar文件
+
+                    sh "scp ${SCP_OPTS} project.tar.gz ${REMOTE_SERVER}:${REMOTE_PROJECT_DIR}/"
+
+                    // 解压并清理
+
+                    sh """
+
+                        ssh ${SSH_OPTS} ${REMOTE_SERVER} '
+
+                        cd ${REMOTE_PROJECT_DIR} && 
+
+                        tar -xzf project.tar.gz && 
+
+                        rm project.tar.gz'
+
+                    """
+
+                    // 清理本地tar文件
+                    sh "rm project.tar.gz"
+
+                }
+
+            }
+
+        }
+        stage('上传代码并执行脚本') {
+            steps {
+            sshagent(['1d2704a7-7dcf-40ed-82c2-ab8d3274dbc9']) {
+                sh """
+                # 同步源码
+                tar -czf - --exclude=.git . | \
+                ssh ${SSH_OPTS} ${REMOTE_SERVER} 'tar -xzf - -C ${REMOTE_PROJECT_DIR}'
+                # 运行部署脚本
+                ssh ${SSH_OPTS} ${REMOTE_SERVER} '${DEPLOY_SCRIPT}'
+                """
+            }
+            }
+        }
+    }
+
+    post {
+        success { echo '部署成功！' }
+        failure { echo '部署失败！' }
+    }
+}

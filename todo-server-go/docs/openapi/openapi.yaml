@@ -1,0 +1,277 @@
+openapi: 3.0.3
+info:
+  title: Todo Project Manager API (Migration Baseline)
+  version: 0.1.0
+  description: |
+    Minimal compatibility contract for key base, fabrics, and grid endpoints
+    used during Python -> Go migration verification.
+servers:
+  - url: http://127.0.0.1:8000
+    description: Python baseline service
+  - url: http://127.0.0.1:8080
+    description: Go migration service
+tags:
+  - name: base
+  - name: fabrics
+  - name: grid
+paths:
+  /api/base/auth/login:
+    post:
+      tags: [base]
+      summary: Login and issue access token
+      operationId: baseAuthLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeObject"
+        "400":
+          $ref: "#/components/responses/ErrorEnvelope"
+        "401":
+          $ref: "#/components/responses/ErrorEnvelope"
+  /api/base/auth/me:
+    get:
+      tags: [base]
+      summary: Get current user profile
+      operationId: baseAuthMe
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeObject"
+        "401":
+          $ref: "#/components/responses/ErrorEnvelope"
+  /api/fabrics/list_public:
+    get:
+      tags: [fabrics]
+      summary: Get public fabrics list
+      operationId: fabricsListPublic
+      responses:
+        "200":
+          description: Public fabrics list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeAny"
+  /api/fabrics/fabrics/:
+    get:
+      tags: [fabrics]
+      summary: List fabrics
+      operationId: fabricsList
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Fabrics list (envelope or paginated legacy shape)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/EnvelopeAny"
+                  - $ref: "#/components/schemas/LegacyPagination"
+        "401":
+          $ref: "#/components/responses/ErrorEnvelope"
+    post:
+      tags: [fabrics]
+      summary: Create fabric
+      operationId: fabricsCreate
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        "200":
+          description: Fabric created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeObject"
+        "400":
+          $ref: "#/components/responses/ErrorEnvelope"
+        "401":
+          $ref: "#/components/responses/ErrorEnvelope"
+  /api/grid/projects/:
+    get:
+      tags: [grid]
+      summary: List projects
+      operationId: gridProjectsList
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Project list
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/EnvelopeAny"
+                  - $ref: "#/components/schemas/LegacyPagination"
+        "401":
+          $ref: "#/components/responses/ErrorEnvelope"
+    post:
+      tags: [grid]
+      summary: Create project
+      operationId: gridProjectsCreate
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        "200":
+          description: Project created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeObject"
+        "400":
+          $ref: "#/components/responses/ErrorEnvelope"
+        "401":
+          $ref: "#/components/responses/ErrorEnvelope"
+  /api/grid/rows/get_rows:
+    get:
+      tags: [grid]
+      summary: Get rows by project
+      operationId: gridRowsGetRows
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: project_id
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Rows for project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeAny"
+        "400":
+          $ref: "#/components/responses/ErrorEnvelope"
+        "401":
+          $ref: "#/components/responses/ErrorEnvelope"
+  /api/grid/cells/update:
+    patch:
+      tags: [grid]
+      summary: Update one or more cells
+      operationId: gridCellsUpdate
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        "200":
+          description: Cell update success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeAny"
+        "400":
+          $ref: "#/components/responses/ErrorEnvelope"
+        "401":
+          $ref: "#/components/responses/ErrorEnvelope"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    ErrorEnvelope:
+      description: Standard error envelope
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/EnvelopeError"
+  schemas:
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 1
+    EnvelopeAny:
+      type: object
+      required: [code, message, data]
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+        data:
+          nullable: true
+    EnvelopeObject:
+      allOf:
+        - $ref: "#/components/schemas/EnvelopeAny"
+        - type: object
+          properties:
+            data:
+              type: object
+              nullable: true
+              additionalProperties: true
+    EnvelopeError:
+      allOf:
+        - $ref: "#/components/schemas/EnvelopeAny"
+        - type: object
+          properties:
+            code:
+              type: integer
+              example: 4001
+            message:
+              type: string
+              example: invalid request
+    LegacyPagination:
+      type: object
+      properties:
+        count:
+          type: integer
+        next:
+          type: string
+          nullable: true
+        previous:
+          type: string
+          nullable: true
+        results:
+          type: array
+          items:
+            type: object
+            additionalProperties: true

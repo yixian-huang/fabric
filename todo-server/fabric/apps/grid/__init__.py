@@ -1,0 +1,1 @@
+default_app_config = 'fabric.apps.grid.apps.GridConfig'

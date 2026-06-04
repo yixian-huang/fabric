@@ -1,0 +1,15 @@
+DROP TABLE IF EXISTS grid_vendor_share;
+DROP TABLE IF EXISTS grid_shared;
+DROP TABLE IF EXISTS grid_cells;
+DROP TABLE IF EXISTS grid_rows;
+DROP TABLE IF EXISTS grid_columns;
+DROP TABLE IF EXISTS grid_projects;
+DROP TABLE IF EXISTS visitor_logs;
+DROP TABLE IF EXISTS favorite_shares;
+DROP TABLE IF EXISTS fabric_favorites;
+DROP TABLE IF EXISTS vendors;
+DROP TABLE IF EXISTS options;
+DROP TABLE IF EXISTS fabric_components;
+DROP TABLE IF EXISTS fabrics;
+DROP TABLE IF EXISTS images;
+DROP TABLE IF EXISTS users;

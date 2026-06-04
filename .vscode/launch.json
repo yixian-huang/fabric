@@ -1,0 +1,48 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "TODO-Web",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "pnpm dev",
+            "cwd": "${workspaceFolder}/todo-web",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "TODO-Table",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "pnpm dev",
+            "cwd": "${workspaceFolder}/todo-table",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "TODO-Server (uv run)",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "uv run manage.py runserver 0.0.0.0:8000",
+            "cwd": "${workspaceFolder}/todo-server",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "TODO-Server (Python)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/todo-server/manage.py",
+            "args": ["runserver", "0.0.0.0:8000"],
+            "django": true,
+            "justMyCode": true,
+            "autoStartBrowser": false,
+            "cwd": "${workspaceFolder}/todo-server",
+            "python": "${workspaceFolder}/todo-server/.venv/bin/python",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/todo-server"
+            },
+            "console": "integratedTerminal"
+        }
+    ]
+}
