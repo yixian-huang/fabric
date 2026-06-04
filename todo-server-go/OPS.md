@@ -1,33 +1,40 @@
 # Fabric API (Go) — Quick-Box 部署
 
-## Deploy hook（正确项目：todo-project-admin）
+## 仓库
+
+- **Monorepo:** https://github.com/yixian-huang/fabric.git
+- **构建路径:** `todo-server-go/`（`Dockerfile` + `buildContext`）
+
+## Deploy hook
 
 ```bash
-curl -X POST "https://ops.zoom.ci/api/v1/deploy-hooks/7eea0f4c-750c-4ddc-b7f1-6caf2fff7a98/fabric" \
+curl -X POST "https://ops.zoom.ci/api/v1/deploy-hooks/7abe3dcb-758f-4614-bf0a-f91ed6086477/fabric" \
   -H "X-API-Key: $QB_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"gitRef":"fabric-go"}'
+  -d '{"gitRef":"main"}'
 ```
 
-- **Git 分支:** `fabric-go` on `https://github.com/yixian-huang/todo-server.git`
-- **QB Project ID:** `7eea0f4c-750c-4ddc-b7f1-6caf2fff7a98`（todo-project-admin）
+- **QB Project ID:** `7abe3dcb-758f-4614-bf0a-f91ed6086477`
+- **Environment ID:** `85abae00-85f7-4677-87b2-3f1053dcee51`
 - **环境名:** `fabric`
-- **对外端口:** `18080` → 容器 `8080`（宿主机 `8080` 已被占用）
+- **对外端口:** `18081` → 容器 `8080`
 
-## 运行时依赖（宿主机）
+## 运行时依赖
 
 | 服务 | 容器内访问 | 说明 |
 |------|------------|------|
-| PostgreSQL | `host.docker.internal:54321` | 库名 `fabric`，用户 `fabric` |
-| RustFS (S3) | `host.docker.internal:9000` | Bucket `fabric`，控制台 [RustFS Browser](http://172.81.57.29:9001/rustfs/console/browser/) |
-| Redis | `host.docker.internal:6379` | 可选，连接失败仅 warn |
+| PostgreSQL | `1Panel-postgresql-9dQe:5432` | 库名 `fabric`，用户 `fabric`（QB 环境变量 `POSTGRES_DSN`） |
+| 文件存储 | `/app/data/files` | `STORAGE_MODE=local` |
+| Redis | 可选 | 连接失败仅 warn |
 
 ## 健康检查
 
 ```bash
-curl http://172.81.57.29:18080/healthz
+curl http://172.81.57.29:18081/healthz
 ```
 
-## 环境变量（Quick-Box 已注入）
+## 环境变量
 
-见 QB 环境 `fabric` 的 variables API；密钥在控制台以 secret 管理，勿写入仓库。
+在 Quick-Box 控制台或 Variables API 管理；**勿将密钥写入仓库**。
+
+常用键：`POSTGRES_DSN`、`JWT_SECRET`、`APP_ENV`、`DATABASE_MODE`、`STORAGE_MODE`、`DATA_DIR`。
