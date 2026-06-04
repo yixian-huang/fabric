@@ -40,6 +40,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./todo-server-go
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ github.repository_owner }}/fabric-api:${{ steps.ver.outputs.version }}
@@ -49,6 +50,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./todo-web
+          platforms: linux/amd64,linux/arm64
           push: true
           build-args: |
             VITE_API_BASE_URL=/api
@@ -60,6 +62,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./todo-table
+          platforms: linux/amd64,linux/arm64
           push: true
           build-args: |
             VITE_API_BASE_URL=/api

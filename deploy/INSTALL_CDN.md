@@ -73,7 +73,11 @@ curl -fsSL http://172.81.57.29:18081/install.sh | bash
 
 ## GHCR
 
-`fabric-api` / `fabric-web` / `fabric-table` 需对用户 **可 pull**（Public 或文档说明 login）。
+1. 发版： `git tag v1.0.0 && git push origin v1.0.0`（触发 `.github/workflows/release.yml`）
+2. 在 GitHub → Packages 将 `fabric-api` / `fabric-web` / `fabric-table` 设为 **Public**
+3. Apple Silicon 若仅 amd64 镜像，可：`export DOCKER_DEFAULT_PLATFORM=linux/amd64` 后再安装
+
+`denied` 常见原因：tag 尚未推送构建完成，或包仍为 Private。
 
 ## 独立 CDN（可选）
 
