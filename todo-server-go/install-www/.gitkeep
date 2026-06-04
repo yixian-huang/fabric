@@ -1,0 +1,2 @@
+# 运行时挂载目录：/app/install-www
+# 发版后执行 scripts/sync-install-cdn.sh 将 dist/ 同步到宿主机对应卷
