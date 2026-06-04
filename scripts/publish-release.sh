@@ -52,6 +52,15 @@ IMAGE_TABLE="${FABRIC_REGISTRY}/fabric-table:${VERSION}"
 
 info() { echo "[publish] $*"; }
 
+inject_install_base_default() {
+  local file="$1"
+  local base="$2"
+  local tmp="${file}.tmp"
+  sed "s|FABRIC_INSTALL_BASE=\"\${FABRIC_INSTALL_BASE:-[^\"]*}\"|FABRIC_INSTALL_BASE=\"\${FABRIC_INSTALL_BASE:-${base}}\"|" \
+    "$file" > "$tmp"
+  mv "$tmp" "$file"
+}
+
 if [[ "$BUNDLE_ONLY" -eq 0 ]]; then
   info "构建镜像 ${VERSION}..."
 
@@ -90,6 +99,7 @@ cp "$ROOT/deploy/.env.example" "$RELEASE_DIR/env.example"
 cp "$ROOT/deploy/install.sh" "$RELEASE_DIR/install.sh"
 cp "$ROOT/scripts/install-lib.sh" "$RELEASE_DIR/install-lib.sh"
 chmod +x "$RELEASE_DIR/install.sh"
+inject_install_base_default "$RELEASE_DIR/install.sh" "$FABRIC_INSTALL_BASE"
 
 SUM_COMPOSE="$(sha256_file "$RELEASE_DIR/docker-compose.yml")"
 SUM_NGINX="$(sha256_file "$RELEASE_DIR/nginx.conf")"
@@ -120,7 +130,7 @@ mkdir -p "$LATEST_DIR"
 cp -R "$RELEASE_DIR/." "$LATEST_DIR/"
 
 # 根 install.sh 指向同一脚本，便于 CDN 只托管一个 URL
-cp "$ROOT/deploy/install.sh" "$ROOT/dist/install.sh"
+cp "$RELEASE_DIR/install.sh" "$ROOT/dist/install.sh"
 chmod +x "$ROOT/dist/install.sh"
 
 info "完成"

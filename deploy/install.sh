@@ -11,7 +11,7 @@
 #   curl -fsSL https://get.fabricoption.com/install.sh -o install.sh && bash install.sh
 #
 # 环境变量（可选）:
-#   FABRIC_INSTALL_BASE  安装包 CDN 根 URL，默认 https://get.fabricoption.com
+#   FABRIC_INSTALL_BASE  安装包 CDN 根 URL（publish-release 会写入发布默认值）
 #   FABRIC_VERSION       版本号，默认 latest
 #   FABRIC_INSTALL_DIR   安装目录，默认 $HOME/fabric
 #
