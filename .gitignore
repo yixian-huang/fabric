@@ -1,9 +1,14 @@
 # --- secrets & local env ---
 .env
+.env.*
+!.env.example
+!.env.*.example
 .env.local
-.env.*.local
 *.pem
 *.key
+
+# legacy CI with host/credential references
+todo-server/jenkins-pipeline.json
 
 # --- release / build artifacts ---
 dist/

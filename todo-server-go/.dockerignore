@@ -9,3 +9,5 @@ docker-compose.yml
 Makefile
 sqlc.yaml
 db/queries/
+**/*_test.go
+**/.DS_Store
