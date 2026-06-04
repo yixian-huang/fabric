@@ -23,7 +23,7 @@ curl -X POST "https://ops.zoom.ci/api/v1/deploy-hooks/7abe3dcb-758f-4614-bf0a-f9
 
 | 服务 | 容器内访问 | 说明 |
 |------|------------|------|
-| PostgreSQL | `1Panel-postgresql-9dQe:5432` | 库名 `fabric`，用户 `fabric`（QB 环境变量 `POSTGRES_DSN`） |
+| PostgreSQL | `host.docker.internal:54321` | 宿主机映射端口；库名 `fabric`（QB 变量 `POSTGRES_DSN`） |
 | 文件存储 | `/app/data/files` | `STORAGE_MODE=local` |
 | Redis | 可选 | 连接失败仅 warn |
 
