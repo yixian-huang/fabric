@@ -38,3 +38,8 @@ curl -X POST "https://ops.zoom.ci/api/v1/deploy-hooks/7abe3dcb-758f-4614-bf0a-f9
 - Table: `a523a7e8-dcc6-4197-a7cd-4160b323bdc4`
 
 密钥与 `POSTGRES_DSN` 仅在 Quick-Box 环境变量中配置，勿写入仓库。
+
+## 健康检查
+
+QB 的 `healthCheckUrl` 必须使用**宿主机可访问的 URL**（例如 `http://172.81.57.29:18082/`），
+不要用容器内的 `http://127.0.0.1:80/`，否则检查端会 `fetch failed` 但服务实际已正常。

@@ -1,5 +1,7 @@
 # Fabric API (Go) — Quick-Box 部署
 
+全栈（API + Web + Table）见 [deploy/QUICKBOX.md](../deploy/QUICKBOX.md)。
+
 ## 仓库
 
 - **Monorepo:** https://github.com/yixian-huang/fabric.git
