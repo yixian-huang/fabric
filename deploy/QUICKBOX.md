@@ -39,6 +39,10 @@ curl -X POST "https://ops.zoom.ci/api/v1/deploy-hooks/7abe3dcb-758f-4614-bf0a-f9
 
 密钥与 `POSTGRES_DSN` 仅在 Quick-Box 环境变量中配置，勿写入仓库。
 
+## 用本机做「官方 install」分发
+
+业务端口（18081–18083）≠ 安装 CDN。在发布机上托管 `install.sh` 见 [INSTALL_CDN.md](./INSTALL_CDN.md)（默认 CDN 端口 **18090**）。
+
 ## 健康检查
 
 QB 的 `healthCheckUrl` 必须使用**宿主机可访问的 URL**（例如 `http://172.81.57.29:18082/`），

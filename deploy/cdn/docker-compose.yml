@@ -1,0 +1,19 @@
+# Fabric 安装包静态 CDN（供 curl install.sh 分发，不跑业务）
+# 在发布服务器上: docker compose -f deploy/cdn/docker-compose.yml up -d
+#
+# 将 dist/ 同步到 INSTALL_CDN_DIR（默认 ./www）后对外提供:
+#   http://<host>:18090/install.sh
+#   http://<host>:18090/releases/latest/manifest.json
+
+name: fabric-cdn
+
+services:
+  cdn:
+    image: nginx:1.27-alpine
+    container_name: fabric-cdn
+    restart: unless-stopped
+    ports:
+      - "${INSTALL_CDN_PORT:-18090}:80"
+    volumes:
+      - ${INSTALL_CDN_DIR:-./www}:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
