@@ -12,8 +12,13 @@
 
 前端构建参数（镜像内 baked）：
 
-- `VITE_API_BASE_URL=http://172.81.57.29:18081/api`
+- `VITE_API_BASE_URL=/api`（由容器内 nginx 反代到 API）
 - `fabric-table` 另需 `VITE_BASE_PATH=/grid/`
+
+Web/Table 容器环境变量（反代目标，默认 `http://host.docker.internal:18081`）：
+
+- `API_UPSTREAM=http://172.81.57.29:18081`（若 `host.docker.internal` 不可用）
+- 建议为 `fabric-web`、`fabric-table` 配置 `extraHosts: ["host.docker.internal:host-gateway"]`
 
 ## Deploy hooks
 

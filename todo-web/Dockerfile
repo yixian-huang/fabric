@@ -30,8 +30,9 @@ FROM nginx:stable-alpine as production-stage
 # 复制构建产物到 Nginx 目录
 COPY --from=build-stage /app/dist /usr/share/nginx/html
 
-# 复制自定义 Nginx 配置（如果需要）
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# API 反代目标（Quick-Box 单机部署可在环境变量覆盖）
+ENV API_UPSTREAM=http://host.docker.internal:18081
+COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 
 # 暴露 80 端口
 EXPOSE 80
