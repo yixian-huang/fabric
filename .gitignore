@@ -45,6 +45,7 @@ todo-server-go/*.exe
 todo-server-go/*.test
 todo-server-go/coverage.out
 todo-server-go/coverage.html
+todo-server-go/.local-data/
 
 # --- IDE & OS ---
 .idea/

@@ -2,7 +2,6 @@ package fabrics
 
 import (
 	"context"
-	"encoding/json"
 	"strings"
 	"time"
 
@@ -30,7 +29,7 @@ func (s *pgStore) ListFabrics(ctx context.Context) ([]Fabric, error) {
 	rows, err := s.pool.Query(ctx, `
 		SELECT fabric_id::text, code, COALESCE(reference_code, ''), merchant_code,
 		       COALESCE(weight, 0), weight_unit, fabric_type, style_codes, process_codes,
-		       remark, created_at
+		       remark, created_at, main_image_id::text
 		FROM fabrics
 		ORDER BY created_at DESC`)
 	if err != nil {
@@ -41,15 +40,11 @@ func (s *pgStore) ListFabrics(ctx context.Context) ([]Fabric, error) {
 	fabrics := make([]Fabric, 0)
 	ids := make([]string, 0)
 	for rows.Next() {
-		var f Fabric
-		var styleRaw, processRaw []byte
-		if err := rows.Scan(&f.FabricID, &f.Code, &f.ReferenceCode, &f.MerchantCode,
-			&f.Weight, &f.WeightUnit, &f.FabricType, &styleRaw, &processRaw,
-			&f.Remark, &f.CreatedAt); err != nil {
+		f, err := scanFabric(rows)
+		if err != nil {
 			return nil, err
 		}
-		_ = json.Unmarshal(styleRaw, &f.StyleCodes)
-		_ = json.Unmarshal(processRaw, &f.ProcessCodes)
+		attachImageURLs(&f)
 		fabrics = append(fabrics, f)
 		ids = append(ids, f.FabricID)
 	}

@@ -3,19 +3,31 @@ package fabrics
 import "time"
 
 type Fabric struct {
-	FabricID       string      `json:"fabric_id"`
-	Code           string      `json:"code"`
-	ReferenceCode  string      `json:"reference_code"`
-	MerchantCode   string      `json:"merchant_code"`
-	Weight         float64     `json:"weight"`
-	WeightUnit     string      `json:"weight_unit"`
-	FabricType     string      `json:"fabric_type"`
-	StyleCodes     []string    `json:"style_codes"`
-	ProcessCodes   []string    `json:"process_codes"`
-	Remark         string      `json:"remark"`
-	Components     []Component `json:"components"`
-	CreatedAt      time.Time   `json:"created_at"`
-	IsFavorited    bool        `json:"is_favorited"`
+	FabricID            string      `json:"fabric_id"`
+	Code                string      `json:"code"`
+	ReferenceCode       string      `json:"reference_code"`
+	MerchantCode        string      `json:"merchant_code"`
+	Weight              float64     `json:"weight"`
+	WeightUnit          string      `json:"weight_unit"`
+	FabricType          int         `json:"fabric_type"`
+	FabricTypeDisplay   string      `json:"fabric_type_display,omitempty"`
+	ImageURL            string      `json:"image_url,omitempty"`
+	ImageFileID         *string     `json:"image_file_id,omitempty"`
+	ThumbnailURL        string      `json:"thumbnail_url,omitempty"`
+	WatermarkImageURL   string      `json:"watermark_image_url,omitempty"`
+	StyleCodes          []string    `json:"style_codes"`
+	ProcessCodes        []string    `json:"process_codes"`
+	Remark              string      `json:"remark"`
+	Components          []Component `json:"components"`
+	CreatedAt           time.Time   `json:"created_at"`
+	IsFavorited         bool        `json:"is_favorited"`
+}
+
+var fabricTypeDisplay = map[int]string{
+	1: "针织",
+	2: "梭织",
+	3: "蕾丝",
+	4: "天鹅绒",
 }
 
 type Component struct {

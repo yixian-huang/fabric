@@ -12,6 +12,7 @@ import (
 
 	"todo-server-go/internal/infra/auth"
 	"todo-server-go/internal/infra/storage"
+	"todo-server-go/internal/http/media"
 )
 
 var (
@@ -107,7 +108,7 @@ func (s *ImageService) Upload(ctx context.Context, username, projectID string, f
 		filePath = "files"
 	}
 	fileID := uuid.NewString()
-	objectKey := filePath + "/" + username + "/" + projectID + "/" + fileID + "." + ext
+	objectKey := buildObjectKey(filePath, username, projectID, fileID, ext)
 
 	contentType := header.Header.Get("Content-Type")
 	if contentType == "" {
@@ -131,7 +132,23 @@ func (s *ImageService) Upload(ctx context.Context, username, projectID string, f
 		_ = s.storage.DeleteObject(ctx, objectKey)
 		return nil, err
 	}
-	return &UploadImageResponse{FileID: fileID, URL: objectKey, FileName: header.Filename}, nil
+	return &UploadImageResponse{
+		FileID:   fileID,
+		URL:      media.FileDownloadURL(fileID),
+		FileName: header.Filename,
+	}, nil
+}
+
+func buildObjectKey(filePath, username, projectID, fileID, ext string) string {
+	username = strings.TrimSpace(username)
+	if username == "" {
+		username = "admin"
+	}
+	segment := strings.TrimSpace(projectID)
+	if segment == "" {
+		segment = "None"
+	}
+	return filePath + "/" + username + "/" + segment + "/" + fileID + "." + ext
 }
 
 func (s *ImageService) OpenDownload(ctx context.Context, fileID string) (*storage.Object, imageMeta, error) {

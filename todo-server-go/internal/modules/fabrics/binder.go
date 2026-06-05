@@ -41,9 +41,13 @@ func (b *Binder) Bind(r chi.Router, auth func(http.Handler) http.Handler) {
 			fr.With(auth).Post("/share_favorites", b.handler.ShareFavorites)
 			fr.Get("/shared_favorites", b.handler.SharedFavorites)
 			fr.With(auth).Get("/{fabric_id}", b.handler.GetFabric)
+			fr.With(auth).Get("/{fabric_id}/", b.handler.GetFabric)
 			fr.With(auth).Put("/{fabric_id}", b.handler.UpdateFabric)
+			fr.With(auth).Put("/{fabric_id}/", b.handler.UpdateFabric)
 			fr.With(auth).Patch("/{fabric_id}", b.handler.UpdateFabric)
+			fr.With(auth).Patch("/{fabric_id}/", b.handler.UpdateFabric)
 			fr.With(auth).Delete("/{fabric_id}", b.handler.DeleteFabric)
+			fr.With(auth).Delete("/{fabric_id}/", b.handler.DeleteFabric)
 		})
 
 		cr.Route("/vendors", func(vr chi.Router) {

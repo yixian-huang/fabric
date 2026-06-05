@@ -383,7 +383,7 @@ export const updateColumnRule = async (
 
 export const getRows = async (projectId: string, hidden: boolean): Promise<any> => {
   try {
-    const response = await api.get(`/grid/rows/get_rows/?project_id=${projectId}&hidden=${hidden}`);
+    const response = await api.get(`/grid/rows/get_rows?project_id=${projectId}&hidden=${hidden}`);
     return response.data;
   } catch (error) {
     console.error(`获取行失败:`, error);

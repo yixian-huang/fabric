@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 # 按数据库/存储配置生成 docker-compose.yml（由 install-lib / deploy/install.sh source）
 
-# FABRIC_DB_PROFILE: embedded | external | setup
+# FABRIC_DB_PROFILE: sqlite | embedded | external | setup
 # FABRIC_STORAGE_PROFILE: local | minio | external-s3 | setup
-# setup = 先以最小依赖启动，/setup 中再改（DB 仍需可连 Postgres，embedded 提供）
 
 install_lib_compose_services_to_pull() {
+  local db_eff
+  db_eff="$(install_lib_effective_db_profile)"
   COMPOSE_PULL_SERVICES=(api todo-web todo-table gateway)
-  case "${FABRIC_DB_PROFILE:-embedded}" in
-    embedded|setup)
+  case "$db_eff" in
+    embedded)
       COMPOSE_PULL_SERVICES+=(postgres redis)
       ;;
     external)
@@ -24,17 +25,15 @@ install_lib_compose_services_to_pull() {
 
 install_lib_generate_compose() {
   local target="${1:-docker-compose.yml}"
-  local db="${FABRIC_DB_PROFILE:-embedded}"
-  local storage="${FABRIC_STORAGE_PROFILE:-local}"
-  local db_mode storage_mode
+  local db_eff storage db_mode storage_mode
+  db_eff="$(install_lib_effective_db_profile)"
+  storage="${FABRIC_STORAGE_PROFILE:-local}"
+  db="$db_eff"
   local api_depends=()
 
-  case "$db" in
+  case "$db_eff" in
     external)
       db_mode=external
-      ;;
-    setup)
-      db_mode=embedded
       ;;
     *)
       db_mode=embedded
@@ -62,7 +61,7 @@ install_lib_generate_compose() {
   DATABASE_MODE="$db_mode"
   STORAGE_MODE="$storage_mode"
 
-  if [[ "$db" == "embedded" || "$db" == "setup" ]]; then
+  if [[ "$db_eff" == "embedded" ]]; then
     api_depends+=("postgres")
   fi
   api_depends+=("redis")
@@ -78,7 +77,7 @@ name: fabric
 services:
 HEADER
 
-    if [[ "$db" == "embedded" || "$db" == "setup" ]]; then
+    if [[ "$db_eff" == "embedded" ]]; then
       cat <<'PG'
   postgres:
     image: postgres:16-alpine
@@ -168,16 +167,10 @@ MINIO
       BOOTSTRAP_ADMIN_USER: ${BOOTSTRAP_ADMIN_USER:-admin}
       BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:?set BOOTSTRAP_ADMIN_PASSWORD in .env}
       BOOTSTRAP_ADMIN_EMAIL: admin@local
-    healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
 
 API_HEAD
 
-    if [[ "$db" == "embedded" || "$db" == "setup" ]]; then
+    if [[ "$db_eff" == "embedded" ]]; then
       cat <<'API_EMBED_DB'
       POSTGRES_DSN: postgres://${POSTGRES_USER:-fabric}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-fabric}?sslmode=disable
       POSTGRES_DB: ${POSTGRES_DB:-fabric}
@@ -204,9 +197,19 @@ API_EXT_DB
 API_MINIO
     fi
 
+    cat <<'API_HEALTH'
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+API_HEALTH
+
     # depends_on block
     echo "    depends_on:"
-    if [[ "$db" == "embedded" || "$db" == "setup" ]]; then
+    if [[ "$db_eff" == "embedded" ]]; then
       echo "      postgres:"
       echo "        condition: service_healthy"
     fi
@@ -250,7 +253,7 @@ volumes:
   fabric_data:
 REST
 
-    if [[ "$db" == "embedded" || "$db" == "setup" ]]; then
+    if [[ "$db_eff" == "embedded" ]]; then
       echo "  fabric_pg_data:"
     fi
     if [[ "$storage" == "minio" ]]; then

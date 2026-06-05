@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # Fabric 线上一键安装（仅下载部署清单 + 拉取预构建镜像，不含源码）
 #
-# 用户一行命令:
-#   curl -fsSL https://get.fabricoption.com/install.sh | bash
+# 用户一行命令（默认交互，每步可回车）:
+#   curl -fsSL http://<host>:18081/install.sh | bash
 #
-# 指定版本 / 安装目录 / 端口:
-#   curl -fsSL https://get.fabricoption.com/install.sh | bash -s -- --port 9000 --dir /opt/fabric
+# 非交互（默认 sqlite + 本地盘）:
+#   curl -fsSL http://<host>:18081/install.sh | bash -s -- -y --port 8088
 #
-# 交互式（可逐步改端口、管理员、存储）:
-#   curl -fsSL https://get.fabricoption.com/install.sh -o install.sh && bash install.sh
+# 指定版本 / 目录:
+#   curl -fsSL http://<host>:18081/install.sh | bash -s -- --version 1.0.0 --dir /opt/fabric
 #
 # 环境变量（可选）:
 #   FABRIC_INSTALL_BASE  安装包 CDN 根 URL（publish-release 会写入发布默认值）
@@ -35,8 +35,8 @@ usage() {
 Fabric 一键安装
 
 用法:
-  curl -fsSL https://get.fabricoption.com/install.sh | bash
-  curl -fsSL https://get.fabricoption.com/install.sh | bash -s -- [选项]
+  curl -fsSL http://<host>:18081/install.sh | bash
+  curl -fsSL http://<host>:18081/install.sh | bash -s -- [选项]
 
 选项:
   --version, -v VERSION   安装版本 (默认: latest)
@@ -44,12 +44,14 @@ Fabric 一键安装
   --port, -p PORT         对外 HTTP 端口 (默认: 8088)
   --admin-user USER       默认管理员用户名
   --admin-password PASS   默认管理员密码
-  --db MODE               embedded | external | setup
+  --db MODE               sqlite | external | setup
   --storage MODE          local | minio | external-s3 | setup
   --postgres-dsn URL      外部库 DSN（--db external 时必填）
   --base-url URL          安装包 CDN 地址
   --skip-checksum         跳过文件校验（不推荐）
-  -y, --yes               跳过交互，使用参数/默认值
+  -y, --yes               跳过交互（默认 sqlite + 本地盘）
+  --upgrade, -U           升级模式（保留 .env，仅更新清单与镜像）
+  --reconfigure           已有安装时仍走完整配置向导
   -h, --help              显示帮助
 
 环境变量:
@@ -72,6 +74,8 @@ parse_args() {
       --base-url) FABRIC_INSTALL_BASE="$2"; shift 2 ;;
       --skip-checksum) SKIP_CHECKSUM=1; shift ;;
       -y|--yes) FABRIC_YES=1; shift ;;
+      --upgrade|-U) FABRIC_UPGRADE=1; shift ;;
+      --reconfigure) FABRIC_RECONFIGURE=1; shift ;;
       -h|--help) usage; exit 0 ;;
       *) error "未知参数: $1"; usage; exit 1 ;;
     esac
@@ -113,6 +117,19 @@ detect_compose() {
     error "需要 Docker Compose v2（docker compose）"
     exit 1
   fi
+}
+
+# 安装目录尚未就绪时，从 CDN 预加载 install-lib（供交互 / TTY 附着）
+bootstrap_install_lib() {
+  local base="${FABRIC_INSTALL_BASE%/}"
+  local ver="${FABRIC_VERSION:-latest}"
+  local tmp
+  tmp="$(mktemp -d)"
+  download "${base}/releases/${ver}/install-lib-compose.sh" "$tmp/install-lib-compose.sh"
+  download "${base}/releases/${ver}/install-lib.sh" "$tmp/install-lib.sh"
+  # shellcheck source=install-lib.sh
+  source "$tmp/install-lib.sh"
+  rm -rf "$tmp"
 }
 
 download() {
@@ -217,13 +234,23 @@ ensure_env() {
 
   install_lib_load_env_defaults
 
-  if install_lib_is_interactive; then
+  local upgrade_mode=0
+  if [[ "${FABRIC_UPGRADE:-0}" == "1" ]] || install_lib_should_skip_configure "$had_env"; then
+    upgrade_mode=1
+  fi
+
+  if [[ "$upgrade_mode" -eq 1 ]]; then
+    info "升级模式：保留现有 .env，更新部署清单与镜像（--reconfigure 可重新配置）"
+    install_lib_apply_stack_defaults
+  elif install_lib_is_interactive; then
     install_lib_interactive_configure "$had_env"
   else
     install_lib_print_noninteractive_hint
   fi
 
-  install_lib_finalize_secrets
+  if [[ "$upgrade_mode" -ne 1 ]]; then
+    install_lib_finalize_secrets
+  fi
   install_lib_apply_stack_defaults
 
   if [[ "${FABRIC_DB_PROFILE}" == "external" && -z "${POSTGRES_DSN}" ]]; then
@@ -234,14 +261,13 @@ ensure_env() {
   local manifest_version
   manifest_version="$(json_get version "$lib_dir/manifest.json")"
   [[ -n "$manifest_version" ]] && FABRIC_VERSION="$manifest_version"
+  FABRIC_IMAGE_API="${IMAGE_API}"
+  FABRIC_IMAGE_WEB="${IMAGE_WEB}"
+  FABRIC_IMAGE_TABLE="${IMAGE_TABLE}"
 
-  install_lib_write_env_file .env
-  {
-    echo "FABRIC_VERSION=${FABRIC_VERSION}"
-    echo "FABRIC_IMAGE_API=${IMAGE_API}"
-    echo "FABRIC_IMAGE_WEB=${IMAGE_WEB}"
-    echo "FABRIC_IMAGE_TABLE=${IMAGE_TABLE}"
-  } >> .env
+  local skip_finalize=0
+  [[ "$upgrade_mode" -eq 1 ]] && skip_finalize=1
+  install_lib_write_env_file .env "$skip_finalize"
 
   install_lib_generate_compose docker-compose.yml
   install_lib_compose_services_to_pull
@@ -275,17 +301,31 @@ main() {
     exit 1
   fi
 
-  if [[ -t 0 && -t 1 ]] && [[ "${FABRIC_YES:-0}" != "1" ]] && [[ "${FABRIC_NONINTERACTIVE:-0}" != "1" ]]; then
+  bootstrap_install_lib
+  install_lib_attach_tty_for_interactive
+
+  mkdir -p "$FABRIC_INSTALL_DIR"
+  local had_install=0
+  [[ -f "${FABRIC_INSTALL_DIR}/.env" ]] && had_install=1
+
+  if [[ "$had_install" -eq 1 && "${FABRIC_RECONFIGURE:-0}" != "1" ]]; then
+    FABRIC_UPGRADE=1
+  fi
+
+  if install_lib_can_prompt; then
+    local dir_label="安装目录"
+    [[ "${FABRIC_UPGRADE:-0}" == "1" ]] && dir_label="升级目录"
     local dir_input
-    read -r -p "[fabric] 安装目录 [${FABRIC_INSTALL_DIR}]: " dir_input
+    dir_input="$(install_lib_prompt FABRIC_INSTALL_DIR "$dir_label" "${FABRIC_INSTALL_DIR}")"
     [[ -n "$dir_input" ]] && FABRIC_INSTALL_DIR="$dir_input"
   fi
 
-  mkdir -p "$FABRIC_INSTALL_DIR"
   cd "$FABRIC_INSTALL_DIR"
 
   fetch_release
   ensure_env
+  local upgrade_mode="${FABRIC_UPGRADE:-0}"
+  [[ -f .env ]] && [[ "${FABRIC_RECONFIGURE:-0}" != "1" ]] && upgrade_mode=1
 
   # shellcheck disable=SC1091
   set -a && source .env && set +a
@@ -302,9 +342,10 @@ main() {
   host="$(hostname -I 2>/dev/null | awk '{print $1}' || true)"
   [[ -z "$host" ]] && host="127.0.0.1"
 
-  install_lib_print_success "$host" "${COMPOSE[*]} -f docker-compose.yml"
+  install_lib_print_success "$host" "${COMPOSE[*]} -f docker-compose.yml" "$upgrade_mode"
   echo "  安装目录: ${FABRIC_INSTALL_DIR} (v${FABRIC_VERSION})"
-  echo "  升级: curl -fsSL ${FABRIC_INSTALL_BASE%/}/install.sh | bash -s -- --dir ${FABRIC_INSTALL_DIR} --version <新版本>"
+  echo "  再次升级: curl -fsSL ${FABRIC_INSTALL_BASE%/}/install.sh | bash -s -- --dir ${FABRIC_INSTALL_DIR} -y"
+  echo "  重新配置: curl -fsSL ${FABRIC_INSTALL_BASE%/}/install.sh | bash -s -- --dir ${FABRIC_INSTALL_DIR} --reconfigure"
   echo "  停止: cd ${FABRIC_INSTALL_DIR} && ${COMPOSE[*]} -f docker-compose.yml down"
 }
 

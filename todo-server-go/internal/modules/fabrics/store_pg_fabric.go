@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -36,7 +37,7 @@ func (s *pgStore) GetFabric(ctx context.Context, fabricID string) (Fabric, error
 	row := s.pool.QueryRow(ctx, `
 		SELECT fabric_id::text, code, COALESCE(reference_code, ''), merchant_code,
 		       COALESCE(weight, 0), weight_unit, fabric_type, style_codes, process_codes,
-		       remark, created_at
+		       remark, created_at, main_image_id::text
 		FROM fabrics WHERE fabric_id = $1`, fabricID)
 
 	f, err := scanFabric(row)
@@ -51,6 +52,7 @@ func (s *pgStore) GetFabric(ctx context.Context, fabricID string) (Fabric, error
 		return Fabric{}, err
 	}
 	f.Components = components[f.FabricID]
+	attachImageURLs(&f)
 	return f, nil
 }
 
@@ -132,7 +134,7 @@ func (s *pgStore) UpdateFabric(ctx context.Context, fabricID string, in FabricIn
 	if in.MerchantCode != "" {
 		merchantCode = in.MerchantCode
 	}
-	fabricType := existing.FabricType
+	fabricType := strconv.Itoa(existing.FabricType)
 	if in.FabricType != "" {
 		fabricType = in.FabricType
 	}
@@ -280,13 +282,21 @@ type fabricScanner interface {
 func scanFabric(row fabricScanner) (Fabric, error) {
 	var f Fabric
 	var styleRaw, processRaw []byte
+	var fabricTypeRaw string
+	var mainImageID *string
 	if err := row.Scan(&f.FabricID, &f.Code, &f.ReferenceCode, &f.MerchantCode,
-		&f.Weight, &f.WeightUnit, &f.FabricType, &styleRaw, &processRaw,
-		&f.Remark, &f.CreatedAt); err != nil {
+		&f.Weight, &f.WeightUnit, &fabricTypeRaw, &styleRaw, &processRaw,
+		&f.Remark, &f.CreatedAt, &mainImageID); err != nil {
 		return Fabric{}, err
 	}
 	_ = json.Unmarshal(styleRaw, &f.StyleCodes)
 	_ = json.Unmarshal(processRaw, &f.ProcessCodes)
+	f.FabricType = parseFabricType(fabricTypeRaw)
+	f.FabricTypeDisplay = fabricTypeLabel(f.FabricType)
+	if mainImageID != nil && strings.TrimSpace(*mainImageID) != "" {
+		id := strings.TrimSpace(*mainImageID)
+		f.ImageFileID = &id
+	}
 	return f, nil
 }
 

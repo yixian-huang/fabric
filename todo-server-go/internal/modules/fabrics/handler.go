@@ -349,7 +349,7 @@ type fabricPayload struct {
 	ImageFileID   *string     `json:"image_file_id"`
 	Weight        *float64    `json:"weight"`
 	WeightUnit    string      `json:"weight_unit"`
-	FabricType    string      `json:"fabric_type"`
+	FabricType    flexInt     `json:"fabric_type"`
 	StyleCodes    []string    `json:"style_codes"`
 	ProcessCodes  []string    `json:"process_codes"`
 	Remark        string      `json:"remark"`
@@ -357,19 +357,31 @@ type fabricPayload struct {
 }
 
 func (p fabricPayload) toInput() FabricInput {
+	ft := strconv.Itoa(p.FabricType.Int())
 	return FabricInput{
 		Code:          p.Code,
 		MerchantCode:  p.MerchantCode,
 		ReferenceCode: p.ReferenceCode,
-		ImageFileID:   p.ImageFileID,
+		ImageFileID:   normalizeImageFileID(p.ImageFileID),
 		Weight:        p.Weight,
 		WeightUnit:    p.WeightUnit,
-		FabricType:    p.FabricType,
+		FabricType:    ft,
 		StyleCodes:    p.StyleCodes,
 		ProcessCodes:  p.ProcessCodes,
 		Remark:        p.Remark,
 		Components:    p.Components,
 	}
+}
+
+func normalizeImageFileID(id *string) *string {
+	if id == nil {
+		return nil
+	}
+	s := strings.TrimSpace(*id)
+	if s == "" {
+		return nil
+	}
+	return &s
 }
 
 func parseListQuery(r *http.Request) ListQuery {

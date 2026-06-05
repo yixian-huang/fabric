@@ -65,6 +65,7 @@ func (b *Binder) Bind(r chi.Router, auth func(http.Handler) http.Handler) {
 
 			// Rows
 			r.Get("/rows/get_rows", b.handler.GetRows)
+			r.Get("/rows/get_rows/", b.handler.GetRows)
 			r.Post("/rows", b.handler.CreateRow)
 			r.Post("/rows/", b.handler.CreateRow)
 			r.Delete("/rows/{row_id}", b.handler.DeleteRow)

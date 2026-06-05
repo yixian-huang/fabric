@@ -26,7 +26,28 @@ install_lib_prompt() {
 }
 
 install_lib_is_interactive() {
-  [[ -t 0 && -t 1 ]] && [[ "${FABRIC_NONINTERACTIVE:-0}" != "1" ]] && [[ "${FABRIC_YES:-0}" != "1" ]]
+  [[ "${FABRIC_NONINTERACTIVE:-0}" != "1" ]] && [[ "${FABRIC_YES:-0}" != "1" ]]
+}
+
+install_lib_can_prompt() {
+  install_lib_is_interactive && [[ -t 0 ]]
+}
+
+# curl | bash 时尽量附着终端，使默认走交互（每步可回车）
+install_lib_attach_tty_for_interactive() {
+  [[ "${FABRIC_YES:-0}" == "1" || "${FABRIC_NONINTERACTIVE:-0}" == "1" ]] && return 0
+  [[ -t 0 ]] && return 0
+  if [[ -r /dev/tty ]]; then
+    exec </dev/tty
+  fi
+}
+
+# compose 代码路径用（sqlite 与 embedded 相同栈，仅安装体验不同）
+install_lib_effective_db_profile() {
+  case "${FABRIC_DB_PROFILE:-sqlite}" in
+    external) printf '%s' "external" ;;
+    sqlite|embedded|setup|*) printf '%s' "embedded" ;;
+  esac
 }
 
 install_lib_is_valid_port() {
@@ -35,11 +56,25 @@ install_lib_is_valid_port() {
   (( p >= 1 && p <= 65535 ))
 }
 
+# 升级时本机 fabric-gateway 已监听该端口，不应视为「被占用」
+install_lib_fabric_owns_port() {
+  local p="$1"
+  command -v docker >/dev/null 2>&1 || return 1
+  docker ps --format '{{.Names}} {{.Ports}}' 2>/dev/null \
+    | grep -qE "fabric-gateway.*:${p}->"
+}
+
 install_lib_port_in_use() {
   local p="$1"
+  local ignore_fabric="${2:-0}"
+  if [[ "$ignore_fabric" == "1" ]] && install_lib_fabric_owns_port "$p"; then
+    return 1
+  fi
   if command -v ss >/dev/null 2>&1; then
-    ss -tln 2>/dev/null | grep -q ":${p} "
-    return $?
+    if ss -tln 2>/dev/null | grep -q ":${p} "; then
+      return 0
+    fi
+    return 1
   fi
   if command -v lsof >/dev/null 2>&1; then
     lsof -i ":${p}" -sTCP:LISTEN >/dev/null 2>&1
@@ -72,7 +107,7 @@ install_lib_load_env_defaults() {
   JWT_SECRET="${JWT_SECRET:-change-me-jwt-secret}"
   BOOTSTRAP_ADMIN_USER="${BOOTSTRAP_ADMIN_USER:-admin}"
   BOOTSTRAP_ADMIN_PASSWORD="${BOOTSTRAP_ADMIN_PASSWORD:-change-me-admin}"
-  FABRIC_DB_PROFILE="${FABRIC_DB_PROFILE:-embedded}"
+  FABRIC_DB_PROFILE="${FABRIC_DB_PROFILE:-sqlite}"
   FABRIC_STORAGE_PROFILE="${FABRIC_STORAGE_PROFILE:-local}"
   STORAGE_MODE="${STORAGE_MODE:-local}"
   DATABASE_MODE="${DATABASE_MODE:-embedded}"
@@ -81,8 +116,8 @@ install_lib_load_env_defaults() {
 
 install_lib_apply_stack_defaults() {
   case "${FABRIC_DB_PROFILE}" in
-    embedded|setup|external) ;;
-    *) FABRIC_DB_PROFILE=embedded ;;
+    sqlite|embedded|setup|external) ;;
+    *) FABRIC_DB_PROFILE=sqlite ;;
   esac
   case "${FABRIC_STORAGE_PROFILE}" in
     local|minio|external-s3|setup) ;;
@@ -105,10 +140,10 @@ install_lib_apply_stack_defaults() {
 install_lib_interactive_stack_profiles() {
   local db_input storage_input
   echo ""
-  echo "  数据库（当前后端仅支持 PostgreSQL，不支持 SQLite）"
-  echo "    1) embedded   内置 PostgreSQL 容器（推荐新装）"
-  echo "    2) external   已有 PostgreSQL，安装时填写连接串"
-  echo "    3) setup       先用内置库启动，稍后在 /setup 页面改外部库"
+  echo "  数据库（回车=默认）"
+  echo "    1) sqlite     本地数据库（默认，零配置单文件体验）"
+  echo "    2) external   已有 PostgreSQL，填写连接串"
+  echo "    3) setup      安装后在 /setup 页面配置"
   db_input="$(install_lib_prompt FABRIC_DB "请选择 [1/2/3]" "1")"
   case "$db_input" in
     2|external)
@@ -119,16 +154,16 @@ install_lib_interactive_stack_profiles() {
       FABRIC_DB_PROFILE=setup
       ;;
     *)
-      FABRIC_DB_PROFILE=embedded
+      FABRIC_DB_PROFILE=sqlite
       ;;
   esac
 
   echo ""
-  echo "  文件/对象存储"
-  echo "    1) local         磁盘目录（推荐，镜像最少）"
+  echo "  文件/对象存储（回车=默认）"
+  echo "    1) local         本地磁盘（默认）"
   echo "    2) minio         内置 MinIO"
-  echo "    3) external-s3   外部 S3 / RustFS（安装后 /setup 填 endpoint）"
-  echo "    4) setup         先用本地磁盘，稍后在 /setup 配置"
+  echo "    3) external-s3   外部 S3 / RustFS（/setup 填 endpoint）"
+  echo "    4) setup         安装后在 /setup 配置"
   storage_input="$(install_lib_prompt FABRIC_STORAGE "请选择 [1/2/3/4]" "1")"
   case "$storage_input" in
     2|minio) FABRIC_STORAGE_PROFILE=minio ;;
@@ -139,8 +174,20 @@ install_lib_interactive_stack_profiles() {
   install_lib_apply_stack_defaults
 }
 
+# 已有 .env 且未指定 --reconfigure 时跳过安装向导（仅拉清单/镜像）
+install_lib_should_skip_configure() {
+  local had_env="${1:-0}"
+  [[ "$had_env" -eq 1 ]] && [[ "${FABRIC_RECONFIGURE:-0}" != "1" ]]
+}
+
 install_lib_interactive_configure() {
   local existing="${1:-0}"
+
+  if ! [[ -t 0 ]]; then
+    warn_msg "无交互终端，使用默认 sqlite + 本地磁盘（可加 -y 显式非交互）"
+    install_lib_apply_stack_defaults
+    return 0
+  fi
 
   echo ""
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -151,18 +198,22 @@ install_lib_interactive_configure() {
   if [[ "$existing" -eq 1 ]]; then
     warn_msg "检测到已有 .env"
     local reuse
-    reuse="$(install_lib_prompt REUSE "是否保留现有配置并继续? (y/N)" "N")"
+    reuse="$(install_lib_prompt REUSE "保留现有配置? (Y/n)" "Y")"
     case "$(printf '%s' "$reuse" | tr '[:upper:]' '[:lower:]')" in
-      y|yes) return 0 ;;
+      n|no) ;;
+      *) return 0 ;;
     esac
     echo ""
   fi
+
+  local port_ignore_fabric=0
+  [[ "$existing" -eq 1 ]] && port_ignore_fabric=1
 
   local port_input admin_user_input admin_pass_input storage_input
   while true; do
     port_input="$(install_lib_prompt HTTP_PORT "对外 HTTP 端口" "${HTTP_PORT}")"
     if install_lib_is_valid_port "$port_input"; then
-      if install_lib_port_in_use "$port_input"; then
+      if install_lib_port_in_use "$port_input" "$port_ignore_fabric"; then
         warn_msg "端口 ${port_input} 已被占用，请换一个"
         continue
       fi
@@ -211,7 +262,7 @@ install_lib_interactive_configure() {
 
 install_lib_finalize_secrets() {
   install_lib_apply_stack_defaults
-  if [[ "${FABRIC_DB_PROFILE}" == "embedded" || "${FABRIC_DB_PROFILE}" == "setup" ]]; then
+  if [[ "${FABRIC_DB_PROFILE}" == "sqlite" || "${FABRIC_DB_PROFILE}" == "embedded" || "${FABRIC_DB_PROFILE}" == "setup" ]]; then
     if [[ "${POSTGRES_PASSWORD}" == "change-me-postgres" || -z "${POSTGRES_PASSWORD}" ]]; then
       POSTGRES_PASSWORD="$(install_lib_random_secret)"
     fi
@@ -231,7 +282,8 @@ install_lib_finalize_secrets() {
 
 install_lib_write_env_file() {
   local target="${1:-.env}"
-  install_lib_finalize_secrets
+  local skip_finalize="${2:-0}"
+  [[ "$skip_finalize" != "1" ]] && install_lib_finalize_secrets
   cat > "$target" <<EOF
 # Generated by Fabric install script — $(date -u +"%Y-%m-%dT%H:%M:%SZ")
 HTTP_PORT=${HTTP_PORT}
@@ -249,15 +301,18 @@ FABRIC_STORAGE_PROFILE=${FABRIC_STORAGE_PROFILE}
 DATABASE_MODE=${DATABASE_MODE}
 STORAGE_MODE=${STORAGE_MODE}
 POSTGRES_DSN=${POSTGRES_DSN}
+FABRIC_VERSION=${FABRIC_VERSION:-}
+FABRIC_IMAGE_API=${FABRIC_IMAGE_API:-}
+FABRIC_IMAGE_WEB=${FABRIC_IMAGE_WEB:-}
+FABRIC_IMAGE_TABLE=${FABRIC_IMAGE_TABLE:-}
 EOF
 }
 
 install_lib_print_noninteractive_hint() {
   install_lib_apply_stack_defaults
-  warn_msg "非交互模式：默认 内置 PostgreSQL + 本地磁盘存储（不拉 MinIO/mc）。"
-  echo "  交互式安装: curl -fsSL .../install.sh -o install.sh && bash install.sh"
-  echo "  参数示例:"
-  echo "    --db embedded|external|setup --storage local|minio|external-s3|setup"
+  warn_msg "非交互模式（-y）：默认 sqlite + 本地磁盘。"
+  echo "  推荐交互: curl -fsSL .../install.sh | bash   # 自动附着终端，每步可回车"
+  echo "  参数示例: --db sqlite --storage local"
   echo ""
 }
 
@@ -265,9 +320,14 @@ install_lib_print_success() {
   local host="${1:-127.0.0.1}"
   local port="${HTTP_PORT:-8088}"
   local compose_hint="${2:-docker compose}"
+  local upgrade="${3:-0}"
 
   echo ""
-  info_msg "安装完成"
+  if [[ "$upgrade" == "1" ]]; then
+    info_msg "升级完成"
+  else
+    info_msg "安装完成"
+  fi
   echo "  首次配置向导:  http://${host}:${port}/setup"
   echo "  管理端:        http://${host}:${port}/"
   echo "  表格端:        http://${host}:${port}/grid/"

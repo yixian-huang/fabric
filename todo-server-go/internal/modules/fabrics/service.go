@@ -3,6 +3,7 @@ package fabrics
 import (
 	"context"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -149,8 +150,11 @@ func matchesFabric(f Fabric, q ListQuery) bool {
 	if q.FabricCode != "" && !containsFold(f.Code, q.FabricCode) {
 		return false
 	}
-	if q.FabricType != "" && !strings.EqualFold(f.FabricType, q.FabricType) {
-		return false
+	if q.FabricType != "" {
+		want := strings.TrimSpace(q.FabricType)
+		if strconv.Itoa(f.FabricType) != want && !strings.EqualFold(fabricTypeLabel(f.FabricType), want) {
+			return false
+		}
 	}
 	if q.WeightUnit != "" && !strings.EqualFold(f.WeightUnit, q.WeightUnit) {
 		return false

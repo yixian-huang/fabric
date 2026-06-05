@@ -3,11 +3,11 @@
 # 线上用户请使用:
 #   curl -fsSL https://get.fabricoption.com/install.sh | bash
 #
-# 交互式安装（可改端口等）:
+# 默认交互（每步可回车，默认 sqlite + 本地盘）:
 #   ./install.sh
 #
-# 非交互 / 管道安装:
-#   ./install.sh --yes
+# 非交互:
+#   ./install.sh -y
 #   ./install.sh --port 9000 --admin-user admin --admin-password 'your-pass'
 set -euo pipefail
 
@@ -37,8 +37,10 @@ Fabric 本地安装（源码构建）
   --port, -p PORT           对外 HTTP 端口 (默认: 8088)
   --admin-user USER         默认管理员用户名 (默认: admin)
   --admin-password PASS     默认管理员密码 (留空则自动生成)
-  --storage MODE            embedded-minio | local
-  -y, --yes                 跳过交互确认，使用参数/默认值
+  --db MODE                 sqlite | external | setup
+  --storage MODE            local | minio | external-s3 | setup
+  --postgres-dsn URL        外部库 DSN
+  -y, --yes                 跳过交互（默认 sqlite + 本地盘）
   -h, --help                显示帮助
 EOF
 }
@@ -116,6 +118,7 @@ prepare_env() {
 
 main() {
   parse_args "$@"
+  install_lib_attach_tty_for_interactive
 
   if ! command -v docker >/dev/null 2>&1; then
     error "未找到 docker"

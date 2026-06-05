@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -288,7 +289,11 @@ func (h *Handler) DownloadFile(w http.ResponseWriter, r *http.Request) {
 		fileName = "download"
 	}
 	w.Header().Set("Content-Type", obj.ContentType)
-	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, fileName))
+	disposition := "attachment"
+	if strings.HasPrefix(strings.ToLower(obj.ContentType), "image/") {
+		disposition = "inline"
+	}
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`%s; filename="%s"`, disposition, fileName))
 	w.WriteHeader(http.StatusOK)
 	_, _ = io.Copy(w, obj.Reader)
 }
