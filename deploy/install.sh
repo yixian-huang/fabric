@@ -334,9 +334,21 @@ main() {
   "${COMPOSE[@]}" -f docker-compose.yml pull "${COMPOSE_PULL_SERVICES[@]}"
 
   info "启动服务..."
-  "${COMPOSE[@]}" -f docker-compose.yml up -d "${COMPOSE_PULL_SERVICES[@]}"
+  local up_args=(-d)
+  # 升级时必须重建容器，否则 pull 新镜像后仍跑旧容器（静态资源 404）
+  if [[ "$upgrade_mode" == "1" ]]; then
+    up_args+=(--force-recreate --pull always)
+  fi
+  "${COMPOSE[@]}" -f docker-compose.yml up "${up_args[@]}" "${COMPOSE_PULL_SERVICES[@]}"
 
   wait_for_api || true
+
+  if ! install_lib_verify_frontend; then
+    warn "前端校验未通过，尝试强制重建 web/table/gateway..."
+    "${COMPOSE[@]}" -f docker-compose.yml up -d --force-recreate todo-web todo-table gateway
+    sleep 3
+    install_lib_verify_frontend || warn "仍有问题：请检查 .env 中 FABRIC_IMAGE_WEB / FABRIC_IMAGE_TABLE 是否对应 fabric-web / fabric-table 镜像"
+  fi
 
   local host
   host="$(hostname -I 2>/dev/null | awk '{print $1}' || true)"

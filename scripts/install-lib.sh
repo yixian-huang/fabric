@@ -316,6 +316,42 @@ install_lib_print_noninteractive_hint() {
   echo ""
 }
 
+# 校验 gateway 路由：/ 应为管理端，/grid/ 应为表格端，且静态资源可访问
+install_lib_verify_frontend() {
+  local port="${HTTP_PORT:-8088}"
+  local root_html grid_html asset code
+
+  root_html="$(curl -fsS "http://127.0.0.1:${port}/" 2>/dev/null || true)"
+  grid_html="$(curl -fsS "http://127.0.0.1:${port}/grid/" 2>/dev/null || true)"
+
+  if [[ -z "$root_html" || -z "$grid_html" ]]; then
+    warn_msg "无法访问前端页面，请检查 gateway 是否监听 ${port}"
+    return 1
+  fi
+
+  if echo "$root_html" | grep -q 'id="root"'; then
+    error_msg "管理端 (/) 返回了表格应用 — FABRIC_IMAGE_WEB / FABRIC_IMAGE_TABLE 可能写反"
+    error_msg "请编辑 .env 后执行: docker compose up -d --force-recreate todo-web todo-table gateway"
+    return 1
+  fi
+  if echo "$grid_html" | grep -q 'id="app"'; then
+    error_msg "表格端 (/grid/) 返回了管理应用 — FABRIC_IMAGE_WEB / FABRIC_IMAGE_TABLE 可能写反"
+    error_msg "请编辑 .env 后执行: docker compose up -d --force-recreate todo-web todo-table gateway"
+    return 1
+  fi
+
+  asset="$(echo "$root_html" | grep -oE 'src="/assets/[^"]+"' | head -1 | sed 's/src="//;s/"//')"
+  if [[ -n "$asset" ]]; then
+    code="$(curl -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1:${port}${asset}" 2>/dev/null || echo 000)"
+    if [[ "$code" != "200" ]]; then
+      warn_msg "静态资源 ${asset} 返回 HTTP ${code}（前端容器可能未重建）"
+      return 1
+    fi
+  fi
+
+  return 0
+}
+
 install_lib_print_success() {
   local host="${1:-127.0.0.1}"
   local port="${HTTP_PORT:-8088}"
