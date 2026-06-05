@@ -264,9 +264,17 @@ export default {
     myFavorites: 'My Favorites',
     favoriteCount: 'Total {count} fabrics',
     shareFavorites: 'Share Favorites',
+    shareLink: 'Share Link',
+    shareTip: 'Share this link so others can view your favorites',
+    shareError: 'Failed to generate share link',
     downloadPDF: 'Download PDF',
     noFavorites: 'No Favorites',
     sharedFavorites: 'Shared Favorites',
-    noSharedFavorites: 'No Shared Favorites'
+    sharedBy: "{username}'s favorites",
+    sharedAt: 'Shared on {date}',
+    viewCount: 'Viewed {count} times',
+    noSharedFavorites: 'No Shared Favorites',
+    shareInvalid: 'Share link is invalid or expired',
+    shareInvalidHint: 'Please check the link or ask the sharer for a new one'
   }
 } 

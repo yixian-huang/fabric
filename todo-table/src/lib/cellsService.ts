@@ -99,8 +99,8 @@ export const updateCellLatest = (params: UpdateCellRequest): Promise<unknown> =>
  */
 export const batchUpdateCells = async (cells: UpdateCellRequest[]) => {
   try {
-    const response = await api.post('/grid/cells/batch_update/', { cells });
-    return response.data;
+    const results = await Promise.all(cells.map((cell) => updateCell(cell)));
+    return results;
   } catch (error) {
     console.error('批量更新单元格失败:', error);
     throw error;

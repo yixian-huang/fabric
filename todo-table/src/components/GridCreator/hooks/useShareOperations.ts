@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { ShareInfo, VendorTag } from "../GridTypes";
 import { parseVendorTags } from "../utils/vendorUtils";
 import { createSharedLink, SharedLinkResponse } from "@/lib/projectService";
+import { buildProjectShareUrl } from "@/lib/gridShareUtils";
 import { toast } from "@/hooks/use-toast";
 import { useProjectStore } from "@/store/projectStore";
 
@@ -82,25 +83,33 @@ export const useShareOperations = () => {
       const responses = await createSharedLink(projectId, selectedRowIds);
       allResponses.push(...responses);
       
-      // 为每个供应商设置链接
-      responses.forEach(response => {
+      responses.forEach((response) => {
         if (response.vender) {
-          const vendorLink = `${origin}/share/${response.shared_key}`;
-          newVendorLinks.set(response.vender, vendorLink);
+          newVendorLinks.set(
+            response.vender,
+            buildProjectShareUrl(
+              origin,
+              response.shared_key,
+              response.shared_password,
+              response.vender
+            )
+          );
         }
       });
-      
-      // 设置主链接（使用第一个共享链接）
+
       if (responses.length > 0) {
         const mainResponse = responses[0];
-        const mainLink = `${origin}/share/${mainResponse.shared_key}`;
-        
         setShareInfo({
-          link: mainLink,
+          link: buildProjectShareUrl(
+            origin,
+            mainResponse.shared_key,
+            mainResponse.shared_password,
+            mainResponse.vender
+          ),
           password: mainResponse.shared_password,
           selectedRows: selectedRowIds,
           expiresAt: new Date(new Date().getTime() + 24 * 60 * 60 * 1000),
-          vendor: mainResponse.vender
+          vendor: mainResponse.vender,
         });
       }
       

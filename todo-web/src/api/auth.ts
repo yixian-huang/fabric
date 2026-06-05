@@ -6,11 +6,19 @@ export interface LoginCredentials {
 }
 
 export interface UserInfo {
-  id: string;
+  user_id: string;
   username: string;
-  name?: string;
-  avatar?: string;
-  role?: string;
+  nickname?: string;
+  email?: string;
+}
+
+export interface LoginResult {
+  token: string;
+  user: {
+    id: string;
+    username: string;
+    name?: string;
+  };
 }
 
 /**
@@ -25,7 +33,7 @@ export function login(data: LoginCredentials) {
 }
 
 /**
- * 获取用户信息
+ * 获取当前用户信息
  */
 export function getUserInfo() {
   return request({
@@ -33,16 +41,6 @@ export function getUserInfo() {
     method: 'get'
   });
 }
-
-/**
- * 用户登出
- */
-export function logout() {
-  return request({
-    url: '/auth/logout',
-    method: 'post'
-  });
-} 
 
 export interface RegisterData {
   email: string
@@ -74,4 +72,4 @@ export function resendVerification(email: string) {
     method: 'post',
     data: { email }
   })
-} 
+}

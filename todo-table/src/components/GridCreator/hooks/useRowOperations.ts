@@ -1,8 +1,9 @@
 import { useState, useCallback } from "react";
-import { Cell, GridColumn, GridRow } from "../GridTypes";
+import { GridRow } from "../GridTypes";
 import { createEmptyRow } from "../GridUtils";
 import { toast } from "@/components/ui/use-toast";
-import { addProjectRow, deleteProjectRow, toggleRowsHidden, getRows } from "@/lib/projectService";
+import { addProjectRow, deleteProjectRow, toggleRowsHidden } from "@/lib/projectService";
+import { mapApiRowToGridRow } from "@/lib/gridTransform";
 import { useProjectStore } from "@/store/projectStore";
 
 /**
@@ -27,25 +28,8 @@ export const useRowOperations = (inputProjectId?: string) => {
     setLoading(true);
       // 调用后端接口创建行
       addProjectRow(projectId).then(result => {
-        const newRow = result;
-        // 转换cells为正确的Cell类型结构
-        const formattedCells = newRow.cells ? newRow.cells.map(cell => ({
-          id: cell.cell_id,
-          content: cell.content || '',
-          type: cell.type || 'text',
-          style: cell.style || {},
-          row: cell.row,
-          column: cell.column
-        })) : [];
-
-        console.log(result);
-        // 更新本地状态
-        setRows(prev => [...prev, {
-          id: newRow.row_id,
-          row_id: newRow.row_id,
-          isSelected: false,
-          cells: formattedCells as Cell[]
-        }]);
+        const gridRow = mapApiRowToGridRow(result, new Map());
+        setRows(prev => [...prev, gridRow]);
         setLoading(false);
       })
   }, [projectId]);
@@ -126,25 +110,23 @@ export const useRowOperations = (inputProjectId?: string) => {
     }
   }, [rows]);
 
-  // 显示所有隐藏的行
-  const showHiddenRows = useCallback(async (row: GridRow) => {
-    setLoading(true);
-    
-    try {
-
-      const rows = await getRows(projectId, false);
-      setRows(rows);
-      toast({ description: `已显示 1 行` });
-    } catch (error) {
-      console.error("显示行失败:", error);
-      toast({ 
-        description: `显示行失败: ${error instanceof Error ? error.message : '未知错误'}`,
-        variant: "destructive" 
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [rows]);
+  // 将已取消隐藏的行恢复到主表格
+  const restoreHiddenRow = useCallback((row: GridRow) => {
+    const rowId = row.row_id || row.id;
+    setRows((prev) => {
+      const existing = prev.find((r) => r.id === rowId);
+      if (existing) {
+        return prev.map((r) =>
+          r.id === rowId ? { ...r, hidden: false, isSelected: false } : r
+        );
+      }
+      return [
+        ...prev,
+        { ...row, id: rowId, row_id: rowId, hidden: false, isSelected: false },
+      ];
+    });
+    toast({ description: "已显示 1 行" });
+  }, []);
 
   return {
     rows,
@@ -154,7 +136,7 @@ export const useRowOperations = (inputProjectId?: string) => {
     deleteSelectedRows,
     selectAllRows,
     hideSelectedRows,
-    showHiddenRows,
+    restoreHiddenRow,
     loading
   };
 };

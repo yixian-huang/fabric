@@ -230,6 +230,20 @@ export interface SharedLinkResponse {
   updated_at: string;
 }
 
+export interface VendorShareDetail {
+  vendor_share_id: string;
+  shared_key: string;
+  shared_password: string;
+  project: string;
+  project_name?: string;
+  vendor: string;
+  vendor_name?: string;
+  is_active: boolean;
+  row_ids_list?: string[];
+  created_at: string;
+  updated_at: string;
+}
+
 /**
  * 创建共享链接
  * @param projectId 项目ID
@@ -536,7 +550,7 @@ export const createVendorShare = async (
  * @param projectId 项目ID
  * @returns 共享链接列表
  */
-export const getProjectVendorShares = async (projectId: string): Promise<any[]> => {
+export const getProjectVendorShares = async (projectId: string): Promise<VendorShareDetail[]> => {
   try {
     const response = await api.get(`/grid/vendor-share/?project_id=${projectId}`);
     return response.data || [];
@@ -589,7 +603,7 @@ export const generateVendorLinks = async (projectId: string): Promise<any[]> => 
  * @param projectId 项目ID
  * @returns 供应商共享链接列表
  */
-export const getVendorSharedLinks = async (projectId: string): Promise<any[]> => {
+export const getVendorSharedLinks = async (projectId: string): Promise<VendorShareDetail[]> => {
   try {
     const response = await api.get(`/grid/vendor-share/?project_id=${projectId}`);
     return response.data || [];

@@ -7,12 +7,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { getRows } from "@/lib/projectService";
+import { getRows, toggleRowsHidden } from "@/lib/projectService";
 import { GridRow } from "./GridTypes";
 import { renderCellContent } from "@/lib/utils";
 import { useProjectStore } from "@/store/projectStore";
-import { useRowOperations } from "./hooks/useRowOperations";
-import { toggleRowsHidden } from "@/lib/projectService";
+import { useGridContext } from "./GridContextHooks";
+import { mapApiRowsToGridRows } from "@/lib/gridTransform";
 
 interface HiddenRowsDialogProps {
   open: boolean;
@@ -30,28 +30,30 @@ export const HiddenRowsDialog: React.FC<HiddenRowsDialogProps> = ({
   const [hiddenRows, setHiddenRows] = useState<GridRow[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const { showHiddenRows } = useRowOperations();
+  const { columns, restoreHiddenRow } = useGridContext();
+
   const handleShowHiddenRows = async (row: GridRow) => {
-    // 调用API设置行为显示状态
     setLoading(true);
-    toggleRowsHidden([row.row_id], false).then(async () => {
-      setHiddenRows(hiddenRows.filter(r => r.row_id !== row.row_id));
-      await showHiddenRows(row);
+    try {
+      await toggleRowsHidden([row.row_id], false);
+      setHiddenRows((prev) => prev.filter((r) => r.row_id !== row.row_id));
+      restoreHiddenRow(row);
+    } catch (error) {
+      console.error("恢复隐藏行失败:", error);
+    } finally {
       setLoading(false);
-    }).catch(() => {
-      setLoading(false);
-    });
+    }
   };
 
   useEffect(() => {
-    if (open) {
+    if (open && storeProjectId) {
       const fetchHiddenRows = async () => {
         const response = await getRows(storeProjectId, true);
-        setHiddenRows(response);
+        setHiddenRows(mapApiRowsToGridRows(response ?? [], columns));
       };
       fetchHiddenRows();
     }
-  }, [open, storeProjectId]);
+  }, [open, storeProjectId, columns]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} >

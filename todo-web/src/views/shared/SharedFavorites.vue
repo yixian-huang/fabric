@@ -18,8 +18,11 @@
                 }}
               </span>
               <span class="text-gray-400 ml-2">
-                {{ $t("favorite.viewCount", { count: shareInfo.view_count }) }}
+                {{ $t("favorite.viewCount", { count: shareInfo.view_count ?? 0 }) }}
               </span>
+            </p>
+            <p class="text-gray-600 mt-2" v-else-if="total > 0">
+              {{ $t("favorite.favoriteCount", { count: total }) }}
             </p>
           </div>
           <el-button @click="goHome">
@@ -98,6 +101,8 @@ import {
 } from "@element-plus/icons-vue";
 import { useI18n } from "vue-i18n";
 import { getSharedFavorites } from "@/api/favorite";
+import { parseSharedFavoritesResponse } from "@/utils/fabric";
+import type { SharedFavoritesShareInfo } from "@/utils/fabric";
 import FabricTable from "@/components/FabricTable.vue";
 
 const route = useRoute();
@@ -107,7 +112,7 @@ const { t } = useI18n();
 const loading = ref(true);
 const error = ref(false);
 const errorMessage = ref("");
-const shareInfo = ref<any>(null);
+const shareInfo = ref<SharedFavoritesShareInfo | null>(null);
 const favorites = ref<any[]>([]);
 const currentPage = ref(1);
 const pageSize = ref(10);
@@ -117,7 +122,8 @@ const fabricList = computed(() => {
   return favorites.value.map((fav) => fav.fabric);
 });
 
-const formatDate = (dateString: string) => {
+const formatDate = (dateString?: string) => {
+  if (!dateString) return "";
   return new Date(dateString).toLocaleDateString();
 };
 
@@ -131,14 +137,14 @@ const fetchSharedFavorites = async () => {
       throw new Error("缺少分享令牌");
     }
     const response = await getSharedFavorites(token);
-    console.log(response);
-    shareInfo.value = response.data.share_info;
-    favorites.value = response.data.favorites || [];
-    
-    total.value = favorites.value.length;
-  } catch (err: any) {
+    const { items, shareInfo: info } = parseSharedFavoritesResponse(response);
+    shareInfo.value = info;
+    favorites.value = items;
+    total.value = items.length;
+  } catch (err: unknown) {
     error.value = true;
-    errorMessage.value = err.message || t("favorite.shareInvalid");
+    const msg = err instanceof Error ? err.message : '';
+    errorMessage.value = msg || t("favorite.shareInvalid");
     ElMessage.error(errorMessage.value);
   } finally {
     loading.value = false;

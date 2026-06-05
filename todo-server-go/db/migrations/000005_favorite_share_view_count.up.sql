@@ -1,0 +1,2 @@
+ALTER TABLE favorite_shares
+    ADD COLUMN IF NOT EXISTS view_count INT NOT NULL DEFAULT 0;

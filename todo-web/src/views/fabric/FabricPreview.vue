@@ -54,6 +54,7 @@ import { ElMessage } from "element-plus";
 import FabricTable from "@/components/FabricTable.vue";
 import FabricSearchForm from "@/components/FabricSearchForm.vue";
 import { getPublicFabricList, recordVisit } from "@/api/fabric";
+import { parseFabricListResponse } from "@/utils/fabric";
 import { Printer } from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
 import { usePrintStore } from '@/stores/print';
@@ -87,8 +88,9 @@ const fetchFabricList = async () => {
     };
     
     const res = await getPublicFabricList(params);
-    fabricList.value = res?.results || [];
-    total.value = res?.count || 0;
+    const { items, total: listTotal } = parseFabricListResponse(res);
+    fabricList.value = items;
+    total.value = listTotal;
     if (allCount.value < total.value) {
       allCount.value = total.value;
     }

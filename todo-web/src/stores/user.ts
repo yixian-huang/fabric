@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
-import { login as apiLogin, getUserInfo, logout as apiLogout } from '@/api/auth';
-import type { LoginCredentials, UserInfo } from '@/api/auth';
+import { login as apiLogin, getUserInfo, type LoginCredentials, type UserInfo, type LoginResult } from '@/api/auth';
+import { unwrapData } from '@/api/utils';
 import { ElMessage } from 'element-plus';
 
 export const useUserStore = defineStore('user', {
@@ -13,7 +13,7 @@ export const useUserStore = defineStore('user', {
   
   getters: {
     isLoggedIn: (state) => !!state.token,
-    username: (state) => state.userInfo?.username || ''
+    username: (state) => state.userInfo?.nickname || state.userInfo?.username || ''
   },
   
   actions: {
@@ -21,18 +21,15 @@ export const useUserStore = defineStore('user', {
       try {
         this.loading = true;
         const response = await apiLogin(credentials);
-        
-        if (response.data && response.data.token) {
-          this.token = response.data.token;
-          localStorage.setItem('token', response.data.token);
-          
-          // 获取用户信息
-          // await this.fetchUserInfo();
-          
-          return response.data;
-        } else {
-          throw new Error('登录失败：未返回有效的token');
+        const payload = unwrapData<LoginResult>(response);
+
+        if (payload?.token) {
+          this.token = payload.token;
+          localStorage.setItem('token', payload.token);
+          await this.fetchUserInfo();
+          return payload;
         }
+        throw new Error('登录失败：未返回有效的 token');
       } catch (error: any) {
         ElMessage.error(error.message || '登录失败');
         throw error;
@@ -46,9 +43,10 @@ export const useUserStore = defineStore('user', {
       
       try {
         const response = await getUserInfo();
-        if (response.data) {
-          this.userInfo = response.data;
-          return response.data;
+        const info = unwrapData<UserInfo>(response);
+        if (info?.user_id) {
+          this.userInfo = info;
+          return info;
         }
         return null;
       } catch (error) {
@@ -57,29 +55,18 @@ export const useUserStore = defineStore('user', {
       }
     },
     
-    async logout() {
-      try {
-        if (this.token) {
-          await apiLogout();
-        }
-      } catch (error) {
-        console.error('登出时发生错误', error);
-      } finally {
-        // 无论API是否成功，都清除本地状态
-        this.token = '';
-        this.userInfo = null;
-        localStorage.removeItem('token');
-      }
+    logout() {
+      this.token = '';
+      this.userInfo = null;
+      localStorage.removeItem('token');
     },
     
-    // 显示登录对话框
     openLoginDialog() {
       this.showLoginDialog = true;
     },
     
-    // 关闭登录对话框
     closeLoginDialog() {
       this.showLoginDialog = false;
     }
   }
-}); 
+});

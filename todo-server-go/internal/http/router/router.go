@@ -22,6 +22,7 @@ func New(jwtSvc *auth.JWT, binders ...RouteBinder) http.Handler {
 	r.Use(chiMw.Timeout(30 * time.Second))
 	r.Use(appmw.RequestID)
 	r.Use(appmw.Recover)
+	r.Use(appmw.CORS)
 
 	r.Get("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		response.JSON(w, http.StatusOK, 200, "ok", map[string]string{"status": "up"})

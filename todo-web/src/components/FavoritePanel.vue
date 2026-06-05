@@ -75,7 +75,7 @@
       <!-- 分享链接对话框 -->
       <el-dialog
         v-model="showShareDialog"
-        :title="$t('fabric.shareLink')"
+        :title="$t('favorite.shareLink')"
         width="500px"
       >
         <div class="share-content">
@@ -88,7 +88,7 @@
               <el-button @click="copyShareLink">{{ $t('common.copy') }}</el-button>
             </template>
           </el-input>
-          <p class="share-tip">{{ $t('fabric.shareTip') }}</p>
+          <p class="share-tip">{{ $t('favorite.shareTip') }}</p>
         </div>
       </el-dialog>
     </el-drawer>
@@ -102,7 +102,7 @@
   import { useFavoriteStore } from '@/stores/favorite'
   import { usePrintStore } from '@/stores/print'
   import { formatComposition } from '@/utils/fabric'
-  import { shareFavorites } from '@/api/favorite'
+  import { resolveFavoriteShareUrl, shareFavorites } from '@/api/favorite'
   
   const { t } = useI18n()
   const favoriteStore = useFavoriteStore()
@@ -166,19 +166,29 @@
     shareLoading.value = true
     try {
       const response = await shareFavorites()
-      shareUrl.value = response.data.share_url
+      const url = resolveFavoriteShareUrl(response.data)
+      if (!url) {
+        throw new Error('missing share token')
+      }
+      shareUrl.value = url
       showShareDialog.value = true
     } catch (error) {
-      ElMessage.error(t('fabric.shareError'))
+      ElMessage.error(t('favorite.shareError'))
     } finally {
       shareLoading.value = false
     }
   }
   
-  const copyShareLink = () => {
-    shareInputRef.value?.select()
-    document.execCommand('copy')
-    ElMessage.success(t('common.copySuccess'))
+  const copyShareLink = async () => {
+    if (!shareUrl.value) return
+    try {
+      await navigator.clipboard.writeText(shareUrl.value)
+      ElMessage.success(t('common.copySuccess'))
+    } catch {
+      shareInputRef.value?.select()
+      document.execCommand('copy')
+      ElMessage.success(t('common.copySuccess'))
+    }
   }
   
   const handleExportPDF = () => {

@@ -41,7 +41,7 @@ func (h *Handler) ListPublic(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetOptions(w http.ResponseWriter, r *http.Request) {
-	categoryCode := strings.TrimSpace(r.URL.Query().Get("category_code"))
+	categoryCode := normalizeOptionCategoryCode(r.URL.Query().Get("category_code"))
 	opts := h.svc.GetOptions(categoryCode)
 	response.JSON(w, http.StatusOK, 200, "获取选项字典成功", opts)
 }
@@ -249,12 +249,12 @@ func (h *Handler) DeleteFabric(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) CreateOption(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	var req OptionInput
+	var req optionInputPayload
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.JSON(w, http.StatusBadRequest, 40001, "invalid request body", nil)
 		return
 	}
-	o, err := h.svc.CreateOption(req)
+	o, err := h.svc.CreateOption(req.normalize())
 	if err != nil {
 		response.JSON(w, http.StatusBadRequest, 40001, err.Error(), nil)
 		return
@@ -323,6 +323,7 @@ func (h *Handler) ShareFavorites(w http.ResponseWriter, r *http.Request) {
 		response.JSON(w, http.StatusInternalServerError, 50001, "internal error", nil)
 		return
 	}
+	share.ShareURL = buildFavoriteShareURL(r, share.ShareToken)
 	response.JSON(w, http.StatusOK, 200, "获取分享链接成功", share)
 }
 
@@ -332,13 +333,15 @@ func (h *Handler) SharedFavorites(w http.ResponseWriter, r *http.Request) {
 		response.JSON(w, http.StatusBadRequest, 40001, "缺少分享令牌", nil)
 		return
 	}
-	items, err := h.svc.SharedFavorites(token)
+	result, err := h.svc.SharedFavorites(token)
 	if err != nil {
 		response.JSON(w, http.StatusNotFound, 40404, "分享链接无效或已过期", nil)
 		return
 	}
 	response.JSON(w, http.StatusOK, 200, "获取分享收藏列表成功", map[string]interface{}{
-		"items": items,
+		"share_info": result.ShareInfo,
+		"favorites":  result.Favorites,
+		"items":      result.Favorites,
 	})
 }
 
@@ -353,6 +356,9 @@ type fabricPayload struct {
 	StyleCodes    []string    `json:"style_codes"`
 	ProcessCodes  []string    `json:"process_codes"`
 	Remark        string      `json:"remark"`
+	Width         string      `json:"width"`
+	YarnCount     string      `json:"yarn_count"`
+	Density       string      `json:"density"`
 	Components    []Component `json:"components"`
 }
 
@@ -369,6 +375,9 @@ func (p fabricPayload) toInput() FabricInput {
 		StyleCodes:    p.StyleCodes,
 		ProcessCodes:  p.ProcessCodes,
 		Remark:        p.Remark,
+		Width:         p.Width,
+		YarnCount:     p.YarnCount,
+		Density:       p.Density,
 		Components:    p.Components,
 	}
 }
@@ -452,6 +461,22 @@ func splitCSV(raw string) []string {
 		return nil
 	}
 	return out
+}
+
+func buildFavoriteShareURL(r *http.Request, token string) string {
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return ""
+	}
+	scheme := "http"
+	if r.TLS != nil || strings.EqualFold(strings.TrimSpace(r.Header.Get("X-Forwarded-Proto")), "https") {
+		scheme = "https"
+	}
+	host := strings.TrimSpace(r.Host)
+	if host == "" {
+		host = "localhost"
+	}
+	return scheme + "://" + host + "/share/" + token
 }
 
 func clientIP(r *http.Request) string {

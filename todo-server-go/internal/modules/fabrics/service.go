@@ -305,7 +305,6 @@ func (s *Service) ShareFavorites(userID string) (FavoriteShareDTO, error) {
 	return s.store.GetOrCreateFavoriteShare(context.Background(), userID)
 }
 
-func (s *Service) SharedFavorites(token string) ([]FavoriteItem, error) {
-	items, _, err := s.store.ListSharedFavorites(context.Background(), token)
-	return items, err
+func (s *Service) SharedFavorites(token string) (SharedFavoritesResult, error) {
+	return s.store.ListSharedFavorites(context.Background(), token)
 }

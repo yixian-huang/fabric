@@ -4,16 +4,11 @@ import {
   toggleFavorite as apiToggleFavorite,
   getFavoriteCount 
 } from '@/api/favorite'
-
-interface FavoriteItem {
-  favorite_id: string
-  fabric: any
-  created_at: string
-}
+import { parseFavoriteListResponse, type FavoriteListItem } from '@/utils/fabric'
 
 export const useFavoriteStore = defineStore('favorite', {
   state: () => ({
-    favorites: [] as FavoriteItem[],
+    favorites: [] as FavoriteListItem[],
     favoriteCount: 0,
     loading: false
   }),
@@ -23,9 +18,9 @@ export const useFavoriteStore = defineStore('favorite', {
       this.loading = true
       try {
         const response = await getMyFavorites()
-        console.log(response)
-        this.favorites = response.results || []
-        this.favoriteCount = response.count || 0
+        const items = parseFavoriteListResponse(response)
+        this.favorites = items
+        this.favoriteCount = items.length
       } finally {
         this.loading = false
       }
@@ -34,7 +29,8 @@ export const useFavoriteStore = defineStore('favorite', {
     async fetchFavoriteCount() {
       try {
         const response = await getFavoriteCount()
-        this.favoriteCount = response.data.count
+        this.favoriteCount =
+          response.data?.favorite_count ?? response.data?.count ?? 0
       } catch (error) {
         console.error('Failed to fetch favorite count:', error)
       }

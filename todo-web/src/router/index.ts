@@ -25,7 +25,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/menu',
     component: MainLayout,
-    redirect: '/project',
+    redirect: '/menu/project',
     meta: { requiresAuth: true },
     children: [
       {
@@ -88,6 +88,16 @@ const router = createRouter({
   routes
 });
 
+function isSetupExemptPath(path: string): boolean {
+  return (
+    path === '/setup' ||
+    path === '/login' ||
+    path === '/verify-email' ||
+    path === '/' ||
+    path.startsWith('/share/')
+  );
+}
+
 router.beforeEach(async (to, from, next) => {
   const token = localStorage.getItem('token');
 
@@ -98,8 +108,8 @@ router.beforeEach(async (to, from, next) => {
 
   try {
     const res = await getSetupStatus();
-    const data = (res as any).data ?? res;
-    if (data?.setup_required && to.path !== '/setup') {
+    const data = (res as { data?: { setup_required?: boolean } }).data ?? res;
+    if (data?.setup_required && !token && !isSetupExemptPath(to.path)) {
       next('/setup');
       return;
     }

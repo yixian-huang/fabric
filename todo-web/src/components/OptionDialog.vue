@@ -165,6 +165,7 @@ import { ElMessage, ElMessageBox, FormInstance } from 'element-plus';
 import { useI18n } from 'vue-i18n';
 import { Plus } from '@element-plus/icons-vue';
 import { getOptions, createOption, updateOption, deleteOption } from '@/api/fabric';
+import { OPTION_CATEGORY } from '@/utils/fabric';
 
 const { t } = useI18n();
 
@@ -185,9 +186,9 @@ const dialogVisible = computed({
 
 // 分类选项
 const categoryOptions = ref([
-  { value: 'COMPONENT', label: t('fabric.components') },
-  { value: 'CRAFT', label: t('fabric.processes') },
-  { value: 'FABRIC_STYLE', label: t('fabric.styles') }
+  { value: OPTION_CATEGORY.component, label: t('fabric.components') },
+  { value: OPTION_CATEGORY.process, label: t('fabric.processes') },
+  { value: OPTION_CATEGORY.style, label: t('fabric.styles') }
 ]);
 
 // 表格数据相关
@@ -249,7 +250,7 @@ const showAddOptionForm = () => {
   isEdit.value = false;
   currentOptionId.value = '';
   
-  optionForm.category_code = filterCategory.value || 'COMPONENT';
+  optionForm.category_code = filterCategory.value || OPTION_CATEGORY.component;
   optionForm.option_name = '';
   optionForm.sort_order = 0;
   

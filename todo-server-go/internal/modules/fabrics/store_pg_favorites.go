@@ -25,6 +25,17 @@ type FavoriteShareDTO struct {
 	ExpiresAt  *time.Time `json:"expires_at,omitempty"`
 }
 
+type SharedFavoritesShareInfo struct {
+	Username  string    `json:"username"`
+	SharedAt  time.Time `json:"shared_at"`
+	ViewCount int       `json:"view_count"`
+}
+
+type SharedFavoritesResult struct {
+	ShareInfo SharedFavoritesShareInfo `json:"share_info"`
+	Favorites []FavoriteItem           `json:"favorites"`
+}
+
 func (s *pgStore) ListFavorites(ctx context.Context, userID string) ([]FavoriteItem, error) {
 	rows, err := s.pool.Query(ctx, `
 		SELECT f.favorite_id::text, f.fabric_id::text, f.created_at
@@ -102,18 +113,41 @@ func (s *pgStore) GetOrCreateFavoriteShare(ctx context.Context, userID string) (
 	return share, err
 }
 
-func (s *pgStore) ListSharedFavorites(ctx context.Context, token string) ([]FavoriteItem, string, error) {
-	var userID string
+func (s *pgStore) ListSharedFavorites(ctx context.Context, token string) (SharedFavoritesResult, error) {
+	var result SharedFavoritesResult
+	var userID, shareID string
+	var expiresAt *time.Time
+
 	err := s.pool.QueryRow(ctx, `
-		SELECT user_id::text FROM favorite_shares WHERE share_token = $1`, token).Scan(&userID)
+		SELECT fs.share_id::text, fs.user_id::text, u.username, fs.created_at, fs.expires_at,
+		       COALESCE(fs.view_count, 0)
+		FROM favorite_shares fs
+		JOIN users u ON u.user_id = fs.user_id
+		WHERE fs.share_token = $1`, token).
+		Scan(&shareID, &userID, &result.ShareInfo.Username, &result.ShareInfo.SharedAt, &expiresAt, &result.ShareInfo.ViewCount)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, "", errors.New("share not found")
+		return SharedFavoritesResult{}, errors.New("share not found")
 	}
 	if err != nil {
-		return nil, "", err
+		return SharedFavoritesResult{}, err
 	}
+	if expiresAt != nil && expiresAt.Before(time.Now().UTC()) {
+		return SharedFavoritesResult{}, errors.New("share expired")
+	}
+
+	if _, err := s.pool.Exec(ctx, `
+		UPDATE favorite_shares SET view_count = COALESCE(view_count, 0) + 1
+		WHERE share_id = $1`, shareID); err != nil {
+		return SharedFavoritesResult{}, err
+	}
+	result.ShareInfo.ViewCount++
+
 	items, err := s.ListFavorites(ctx, userID)
-	return items, userID, err
+	if err != nil {
+		return SharedFavoritesResult{}, err
+	}
+	result.Favorites = items
+	return result, nil
 }
 
 func randomShareToken() (string, error) {

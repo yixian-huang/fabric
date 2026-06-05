@@ -21,15 +21,16 @@ func newPGStore(pool *pgxpool.Pool, store storage.Store) *pgStore {
 }
 
 var categoryLabels = map[string]string{
-	"style":   "Style",
-	"process": "Process",
+	"component": "Component",
+	"style":     "Style",
+	"process":   "Process",
 }
 
 func (s *pgStore) ListFabrics(ctx context.Context) ([]Fabric, error) {
 	rows, err := s.pool.Query(ctx, `
 		SELECT fabric_id::text, code, COALESCE(reference_code, ''), merchant_code,
 		       COALESCE(weight, 0), weight_unit, fabric_type, style_codes, process_codes,
-		       remark, created_at, main_image_id::text
+		       remark, width, yarn_count, density, created_at, main_image_id::text
 		FROM fabrics
 		ORDER BY created_at DESC`)
 	if err != nil {

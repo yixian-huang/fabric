@@ -38,22 +38,41 @@ export const parseVendorTags = (cell: Cell): VendorTag[] => {
  * @param cell 单元格
  * @returns 解析后的供应商注释数组
  */
+function normalizeVendorNotes(parsed: unknown): VendorNote[] {
+  if (!parsed) return [];
+  if (Array.isArray(parsed)) {
+    return parsed
+      .filter((item): item is VendorNote => !!item && typeof item === 'object' && 'vendorId' in item)
+      .map((item) => ({
+        vendorId: String(item.vendorId),
+        content: String(item.content ?? ''),
+      }));
+  }
+  if (typeof parsed === 'object' && parsed !== null && 'vendorId' in parsed) {
+    const note = parsed as VendorNote;
+    return [{ vendorId: String(note.vendorId), content: String(note.content ?? '') }];
+  }
+  return [];
+}
+
 export const parseVendorNotes = (cell: Cell): VendorNote[] => {
   if (!cell.content) return [];
-  
-  // 如果已经是数组形式，直接返回
+
   if (Array.isArray(cell.content)) {
-    return cell.content as VendorNote[];
+    return normalizeVendorNotes(cell.content);
   }
-  
-  // 尝试解析 JSON 字符串
+
+  if (typeof cell.content === 'object') {
+    return normalizeVendorNotes(cell.content);
+  }
+
   try {
-    if (typeof cell.content === 'string') {
-      return JSON.parse(cell.content);
+    if (typeof cell.content === 'string' && cell.content.trim()) {
+      return normalizeVendorNotes(JSON.parse(cell.content));
     }
   } catch (e) {
     console.error("Error parsing vendor notes:", e);
   }
-  
+
   return [];
 }; 

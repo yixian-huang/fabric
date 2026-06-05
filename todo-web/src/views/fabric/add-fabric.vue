@@ -134,6 +134,7 @@
                         placeholder="单位"
                         class="ml-2 w-24 !rounded-button"
                       >
+                        <el-option label="g/m2" value="g/m2" />
                         <el-option label="gsm" value="gsm" />
                         <el-option label="mm" value="mm" />
                       </el-select>
@@ -332,6 +333,7 @@ import { useRouter, useRoute } from "vue-router";
 import { useI18n } from 'vue-i18n';
 // 引入 API
 import { addFabric, uploadFabricImage, getFabricDetail, updateFabric, getOptions, checkFabricCode } from "@/api/fabric";
+import { filterOptionsByCategory, OPTION_CATEGORY } from "@/utils/fabric";
 
 const router = useRouter();
 const route = useRoute();
@@ -357,7 +359,7 @@ const fabricData = reactive({
     yarn_count: "",
     density: "",
     weight: 1,
-    weight_unit: "gsm",
+    weight_unit: "g/m2",
     fabric_type: 2,
     style_codes: [], // 布面风格选项编码（传递给后端）
     process_codes: [], // 工艺选项编码（传递给后端）
@@ -722,21 +724,22 @@ const fetchFabricDetails = async (id: string) => {
 const fetchOptions = async () => {
   try {
     const response = await getOptions();
-    if (response.code === 200) {
-      // 处理选项数据
-      componentOptions.value = response.data.component_options || [];
-      craftOptions.value = response.data.craft_options || [];
-      fabricStyleOptions.value = response.data.fabric_style_options || [];
-      
-      // 构建名称到编码和编码到名称的映射
-      response.data.forEach((item: any) => {
-        if (item.category_code === 'COMPONENT') {
-          componentOptions.value.push(item);
-        } else if (item.category_code === 'CRAFT') {
-          craftOptions.value.push(item);
-        } else if (item.category_code === 'FABRIC_STYLE') {
-          fabricStyleOptions.value.push(item);
-        }
+    if (response.code === 200 && Array.isArray(response.data)) {
+      const options = response.data;
+      componentOptions.value = filterOptionsByCategory(
+        options,
+        OPTION_CATEGORY.component,
+      );
+      craftOptions.value = filterOptionsByCategory(
+        options,
+        OPTION_CATEGORY.process,
+      );
+      fabricStyleOptions.value = filterOptionsByCategory(
+        options,
+        OPTION_CATEGORY.style,
+      );
+
+      options.forEach((item: any) => {
         optionCodeMap.value[item.option_name] = item.option_code;
         optionNameMap.value[item.option_code] = item.option_name;
       });

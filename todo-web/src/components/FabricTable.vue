@@ -113,7 +113,7 @@
       >
         <template #default="scope">
             <el-tag
-              v-for="item in scope.row.style_options"
+              v-for="item in styleOptions(scope.row)"
               :key="item.code"
               class="mr-1"
               type="success"
@@ -146,10 +146,10 @@
       >
         <template #default="scope">
           <div
-            v-if="scope.row.process_options && scope.row.process_options.length"
+            v-if="processOptions(scope.row).length"
           >
             <el-tag
-              v-for="item in scope.row.process_options"
+              v-for="item in processOptions(scope.row)"
               :key="item.code"
               class="mr-1 mb-1"
               type="success"
@@ -193,7 +193,11 @@ import { Star, StarFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '../stores/user'
 import { useFavoriteStore } from '../stores/favorite'
-import { formatI18nOptionName, formatComposition as formatComp } from "../utils/fabric";
+import {
+  codesToOptions,
+  formatI18nOptionName,
+  formatComposition as formatComp,
+} from "../utils/fabric";
 
 const { t } = useI18n();
 const userStore = useUserStore()
@@ -240,11 +244,10 @@ const handleToggleFavorite = async (fabric: any) => {
   
   favoriteLoading.value[fabric.fabric_id] = true
   try {
-    await favoriteStore.toggleFavorite(fabric.fabric_id)
-    // 更新本地状态
-    fabric.is_favorited = !fabric.is_favorited
+    const isFavorited = await favoriteStore.toggleFavorite(fabric.fabric_id)
+    fabric.is_favorited = isFavorited
     ElMessage.success(
-      fabric.is_favorited ? t('favorite.favoriteSuccess') : t('favorite.unfavoriteSuccess')
+      isFavorited ? t('favorite.favoriteSuccess') : t('favorite.unfavoriteSuccess')
     )
   } catch (error) {
     ElMessage.error(t('favorite.favoriteError'))
@@ -252,6 +255,12 @@ const handleToggleFavorite = async (fabric: any) => {
     favoriteLoading.value[fabric.fabric_id] = false
   }
 }
+
+const styleOptions = (row: { style_options?: { code: string; name?: string }[]; style_codes?: string[] }) =>
+  row.style_options ?? codesToOptions(row.style_codes);
+
+const processOptions = (row: { process_options?: { code: string; name?: string }[]; process_codes?: string[] }) =>
+  row.process_options ?? codesToOptions(row.process_codes);
 
 // 用于国际化处理选项
 const formatI18nOption = (item: any): string => {

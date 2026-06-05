@@ -9,8 +9,10 @@ import { useParams } from 'react-router-dom';
 import { getProjectDetail, getProjectTodoDetail, getProjectSharedLinks, SharedLinkResponse, deleteSharedLink, generateVendorLinks, getVendorSharedLinks, ProjectDetail, updateColumn } from '@/lib/projectService';
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { GridColumn } from './GridTypes';
 import { useProjectStore } from '@/store/projectStore';
+import { mapProjectDetailToGridState } from '@/lib/gridTransform';
+import { buildProjectShareUrl, buildVendorShareUrl } from '@/lib/gridShareUtils';
+import type { VendorShareDetail } from '@/lib/projectService';
 
 export const Grid: React.FC = () => {
   const { projectId: urlProjectId } = useParams<{ projectId: string }>();
@@ -49,7 +51,7 @@ export const Grid: React.FC = () => {
   const [createdAt, setCreatedAt] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [viewVendorLinksDialogOpen, setViewVendorLinksDialogOpen] = useState(false);
-  const [vendorSharedLinks, setVendorSharedLinks] = useState<any[]>([]);
+  const [vendorSharedLinks, setVendorSharedLinks] = useState<VendorShareDetail[]>([]);
   const [isLoadingVendorLinks, setIsLoadingVendorLinks] = useState(false);
   const [bodyViewportHeight, setBodyViewportHeight] = useState(0);
   const [bodyViewportWidth, setBodyViewportWidth] = useState(0);
@@ -66,73 +68,20 @@ export const Grid: React.FC = () => {
   const gridBodyRef = useRef<HTMLDivElement>(null);
 
 
-  const setProjectDetails = (data: ProjectDetail, columnMap: Map<string, GridColumn>) => {
-    // 设置项目基本信息
+  const setProjectDetails = (data: ProjectDetail) => {
     setProjectName(data.name);
     setBaseUrl(data.base_url);
     setCreatedAt(data.created_at);
-    
-    // 更新项目ID到store
+
     if (data.project_id) {
       setProjectId(data.project_id);
     }
-    
-    let formattedColumns: GridColumn[] = [];
-    // 如果有列数据，转换为前端格式
-    if (data.columns && data.columns.length > 0) {
-      formattedColumns = data.columns
-        .sort((a, b) => a.column_index - b.column_index)
-        .map(col => {
-          const column = {
-            id: col.column_id,
-            title: col.title,
-            width: col.width || 100,
-            type: col.type as any || 'text',
-            style: col.style_data,
-            rule: col.rule_data
-          };
-          columnMap.set(col.column_id, column);
-          return column;
-        });
 
+    const { columns: formattedColumns, rows: formattedRows } = mapProjectDetailToGridState(data);
+    if (formattedColumns.length > 0) {
       setColumns(formattedColumns);
     }
-
-    // 如果有行数据，转换为前端格式
-    if (data.rows && data.rows.length > 0) {
-      const formattedRows = data.rows
-        .sort((a, b) => a.row_index - b.row_index)
-        .map(row => {
-          return {
-            id: row.row_id,
-            row_id: row.row_id,
-            isSelected: false,
-            cells: row.cells.map(cell => {
-              // 解析样式JSON字符串
-              let style = {};
-              try {
-                style = JSON.parse(cell.style || '{}');
-              } catch (e) {
-                console.error('解析单元格样式失败:', e);
-              }
-              let files = [];
-              if (cell.type !== 'text' && cell.type !== 'date') {
-                files = JSON.parse(cell.content || '[]');
-              }
-              return {
-                id: cell.cell_id,
-                content: cell.content,
-                type: cell.type as any || 'text',
-                style,
-                files,
-                row: cell.row,
-                column: cell.column,
-                columnDefinition: columnMap.get(cell.column)
-              };
-            })
-          };
-        });
-
+    if (formattedRows.length > 0) {
       setRows(formattedRows);
     }
   }
@@ -141,7 +90,6 @@ export const Grid: React.FC = () => {
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
-      const columnMap = new Map<string, GridColumn>();
       try {
         let data;
         
@@ -159,7 +107,7 @@ export const Grid: React.FC = () => {
         }
         
         if (data) {
-          setProjectDetails(data, columnMap);
+          setProjectDetails(data);
         }
       } catch (error) {
         console.error('获取项目详情失败:', error);
@@ -496,11 +444,11 @@ export const Grid: React.FC = () => {
                           <input
                             type="text"
                             readOnly
-                            value={link + '?password=' + shareInfo?.password}
+                            value={link}
                             className="flex-1 rounded-l-md border p-2 bg-gray-50"
                           />
                           <Button
-                            onClick={() => copyToClipboard(link + '?password=' + shareInfo?.password)}
+                            onClick={() => copyToClipboard(link)}
                             className="rounded-l-none"
                           >
                             复制
@@ -550,7 +498,12 @@ export const Grid: React.FC = () => {
                   </div>
                   {sharedLinks.map((link) => {
                     const origin = window.location.origin;
-                    const fullLink = `${origin}/share/${link.shared_key}?password=${link.shared_password}`;
+                    const fullLink = buildProjectShareUrl(
+                      origin,
+                      link.shared_key,
+                      link.shared_password,
+                      link.vender
+                    );
                     return (
                       <div key={link.shared_id} className="flex justify-between py-2 border-b border-gray-100">
                         <div className="w-48 truncate">{link.vender || '全部'}</div>
@@ -611,23 +564,29 @@ export const Grid: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {vendorSharedLinks.map((link) => (
+                  {vendorSharedLinks.map((link) => {
+                    const vendorLink = buildVendorShareUrl(
+                      window.location.origin,
+                      link.shared_key,
+                      link.shared_password
+                    );
+                    return (
                     <tr key={link.vendor_share_id} className="border-b border-gray-200 hover:bg-gray-50">
                       <td className="py-3 px-4">
-                        <div className="font-medium">{link.vendor_name.toUpperCase()}</div>
+                        <div className="font-medium">{(link.vendor_name || link.vendor || '').toUpperCase()}</div>
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center">
                           <input
                             type="text"
-                            value={`${window.location.origin}/v/${link.vendor_detail?.name}?password=${link.shared_password}`}
+                            value={vendorLink}
                             readOnly
                             className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2"
                           />
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => copyToClipboard(`${window.location.origin}/v/${link.vendor_detail?.name}?password=${link.shared_password}`)}
+                            onClick={() => copyToClipboard(vendorLink)}
                             className="ml-2"
                           >
                             <svg
@@ -651,13 +610,14 @@ export const Grid: React.FC = () => {
                         <Button
                           variant="secondary"
                           size="sm"
-                          onClick={() => window.open(`/v/${link.vendor_detail?.name}?password=${link.shared_password}`, '_blank')}
+                          onClick={() => window.open(vendorLink, '_blank')}
                         >
                           预览
                         </Button>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

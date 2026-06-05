@@ -105,8 +105,8 @@ const handleSwitchToLogin = () => {
   showLoginDialog.value = true
 }
 
-const handleLogout = async () => {
-  await userStore.logout()
+const handleLogout = () => {
+  userStore.logout()
   ElMessage.success('退出登录成功')
   router.push('/')
 }

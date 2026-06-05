@@ -18,6 +18,9 @@ type Fabric struct {
 	StyleCodes          []string    `json:"style_codes"`
 	ProcessCodes        []string    `json:"process_codes"`
 	Remark              string      `json:"remark"`
+	Width               string      `json:"width,omitempty"`
+	YarnCount           string      `json:"yarn_count,omitempty"`
+	Density             string      `json:"density,omitempty"`
 	Components          []Component `json:"components"`
 	CreatedAt           time.Time   `json:"created_at"`
 	IsFavorited         bool        `json:"is_favorited"`

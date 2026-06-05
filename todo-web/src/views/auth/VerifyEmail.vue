@@ -128,32 +128,19 @@ const performVerification = async () => {
   
   try {
     const response = await verifyEmail(token)
-    
-    if (response.data?.code === 200) {
+    const envelope = response as { code?: number; message?: string }
+
+    if (envelope.code === 200) {
       verificationStatus.value = 'success'
-      ElMessage.success('邮箱验证成功，账号已激活！')
+      ElMessage.success(envelope.message || '邮箱验证成功，账号已激活！')
     } else {
       verificationStatus.value = 'error'
-      errorMessage.value = response.data?.message || '验证失败'
+      errorMessage.value = envelope.message || '验证失败'
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     verificationStatus.value = 'error'
-    
-    // 根据错误类型设置不同的错误消息
-    if (error.response?.status === 400) {
-      if (error.response.data?.message?.includes('过期')) {
-        errorMessage.value = '验证链接已过期，请重新发送验证邮件'
-      } else if (error.response.data?.message?.includes('无效')) {
-        errorMessage.value = '验证链接无效，请检查链接是否完整'
-      } else {
-        errorMessage.value = error.response.data?.message || '验证失败'
-      }
-    } else if (error.response?.status === 404) {
-      errorMessage.value = '验证令牌不存在，请重新发送验证邮件'
-    } else {
-      errorMessage.value = '网络错误，请稍后重试'
-    }
-    
+    errorMessage.value =
+      error instanceof Error ? error.message : '网络错误，请稍后重试'
     console.error('邮箱验证失败:', error)
   } finally {
     loading.value = false
@@ -189,8 +176,8 @@ const handleResend = async () => {
     ElMessage.success('验证邮件已重新发送，请查收邮箱')
     showResendDialog.value = false
     resendEmail.value = ''
-  } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || '发送失败，请稍后重试')
+  } catch (error: unknown) {
+    ElMessage.error(error instanceof Error ? error.message : '发送失败，请稍后重试')
   } finally {
     resendLoading.value = false
   }

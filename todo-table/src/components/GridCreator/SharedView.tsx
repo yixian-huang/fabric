@@ -7,8 +7,7 @@ import { toast, useToast } from '@/hooks/use-toast';
 import { VendorTag } from './GridTypes';
 import { accessSharedProject, updateVendorRemark } from '@/lib/projectService';
 import { Loader2 } from 'lucide-react';
-import { log } from 'console';
-import api from '@/lib/api';
+import { resolveCellStyle } from '@/lib/gridTransform';
 import { VendorNoteCell } from './VendorNoteCell';
 
 interface Shared {
@@ -192,17 +191,7 @@ export const SharedView: React.FC = () => {
                         ></div>
                       );
                       
-                      // 解析单元格样式
-                      let cellStyle: { backgroundColor?: string; textColor?: string } = {};
-                      try {
-                        if (cell.style) {
-                          cellStyle = typeof cell.style === 'string' 
-                            ? JSON.parse(cell.style) 
-                            : cell.style;
-                        }
-                      } catch (e) {
-                        console.error('解析单元格样式失败:', e);
-                      }
+                      const cellStyle = resolveCellStyle(cell.style, cell.style_data);
 
                       return (
                         <div
@@ -313,7 +302,7 @@ const renderCellContent = (cell: any, columnType: string, baseUrl: string, share
       return content;
 
     case 'vendorNote':
-      return <VendorNoteCell shared={shared} cell={cell} content={content} />;
+      return <VendorNoteCell shared={shared} cell={cell} content={content} remarkApi="shared" />;
       
     default:
       return typeof content === 'string' ? content : 

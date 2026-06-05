@@ -86,6 +86,7 @@
           clearable
           class="w-full !rounded-button"
         >
+          <el-option value="g/m2" label="g/m2" />
           <el-option value="gsm" label="gsm" />
           <el-option value="mm" label="mm" />
         </el-select>
@@ -228,7 +229,11 @@
 import { ref, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { getOptions } from "@/api/fabric";
-import { formatI18nOptionName } from "@/utils/fabric";
+import {
+  filterOptionsByCategory,
+  formatI18nOptionName,
+  OPTION_CATEGORY,
+} from "@/utils/fabric";
 
 const { t } = useI18n();
 
@@ -324,14 +329,18 @@ const fetchOptions = async () => {
     const res = await getOptions();
     if (res.code === 200 && res.data) {
       // 设置选项数据
-      componentOptions.value = res.data.filter(
-        (option: any) => option.category_code === "COMPONENT"
+      const options = Array.isArray(res.data) ? res.data : [];
+      componentOptions.value = filterOptionsByCategory(
+        options,
+        OPTION_CATEGORY.component,
       );
-      craftOptions.value = res.data.filter(
-        (option: any) => option.category_code === "CRAFT"
+      craftOptions.value = filterOptionsByCategory(
+        options,
+        OPTION_CATEGORY.process,
       );
-      fabricStyleOptions.value = res.data.filter(
-        (option: any) => option.category_code === "FABRIC_STYLE"
+      fabricStyleOptions.value = filterOptionsByCategory(
+        options,
+        OPTION_CATEGORY.style,
       );
     }
   } catch (error) {

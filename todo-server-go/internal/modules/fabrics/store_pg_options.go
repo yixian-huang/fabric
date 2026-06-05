@@ -15,9 +15,52 @@ import (
 var ErrOptionNotFound = errors.New("option not found")
 
 type OptionInput struct {
-	CategoryCode string
-	OptionName   string
-	SortOrder    int
+	CategoryCode string `json:"category_code"`
+	OptionName   string `json:"option_name"`
+	SortOrder    int    `json:"sort_order"`
+}
+
+type optionInputPayload struct {
+	CategoryCode string `json:"category_code"`
+	OptionName   string `json:"option_name"`
+	SortOrder    int    `json:"sort_order"`
+	CategoryCodePascal string `json:"CategoryCode"`
+	OptionNamePascal   string `json:"OptionName"`
+	SortOrderPascal    int    `json:"SortOrder"`
+}
+
+func (p optionInputPayload) normalize() OptionInput {
+	cat := strings.TrimSpace(p.CategoryCode)
+	if cat == "" {
+		cat = strings.TrimSpace(p.CategoryCodePascal)
+	}
+	name := strings.TrimSpace(p.OptionName)
+	if name == "" {
+		name = strings.TrimSpace(p.OptionNamePascal)
+	}
+	sort := p.SortOrder
+	if sort == 0 && p.SortOrderPascal != 0 {
+		sort = p.SortOrderPascal
+	}
+	return OptionInput{
+		CategoryCode: normalizeOptionCategoryCode(cat),
+		OptionName:   name,
+		SortOrder:    sort,
+	}
+}
+
+// normalizeOptionCategoryCode maps legacy Django category codes to Go storage codes.
+func normalizeOptionCategoryCode(raw string) string {
+	switch strings.ToUpper(strings.TrimSpace(raw)) {
+	case "COMPONENT":
+		return "component"
+	case "CRAFT":
+		return "process"
+	case "FABRIC_STYLE":
+		return "style"
+	default:
+		return strings.TrimSpace(raw)
+	}
 }
 
 func (s *pgStore) CreateOption(ctx context.Context, in OptionInput) (Option, error) {

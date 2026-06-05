@@ -8,6 +8,7 @@ import {
   deleteProjectColumn,
   updateColumnTitle as apiUpdateColumnTitle,
 } from "@/lib/projectService";
+import { mapApiColumnToGridColumn } from "@/lib/gridTransform";
 import { toast } from "@/components/ui/use-toast";
 
 /**
@@ -69,14 +70,7 @@ export const useColumnOperations = (
 
     try {
       const col = await createProjectColumn(projectId);
-      const newColumn: GridColumn = {
-        id: col.column_id,
-        title: col.title,
-        width: col.width || 100,
-        type: (col.type as GridColumn["type"]) || "text",
-        style: col.style_data as GridColumn["style"],
-        rule: col.rule_data as GridColumn["rule"],
-      };
+      const newColumn = mapApiColumnToGridColumn(col);
       setColumns((prev) => [...prev, newColumn]);
       appendColumnCells(newColumn);
     } catch (error) {

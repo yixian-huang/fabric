@@ -23,6 +23,7 @@ export interface GridContextType {
   deleteSelectedRows: () => void;
   selectAllRows: (selected: boolean) => void;
   hideSelectedRows: () => void;
+  restoreHiddenRow: (row: GridRow) => void;
 
   addColumn: () => void;
   updateColumnTitle: (columnId: string, title: string) => void;

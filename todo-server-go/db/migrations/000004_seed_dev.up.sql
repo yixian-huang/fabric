@@ -18,19 +18,19 @@ INSERT INTO fabrics (
 VALUES
     (
         '00000000-0000-4000-8000-000000000101',
-        'FB1001', 'REF-1001', 'MC-A', 120, 'g/m2', 'woven',
+        'FB1001', 'REF-1001', 'MC-A', 120, 'g/m2', '2',
         '["STYLE001","STYLE002"]'::jsonb, '["PROC001"]'::jsonb, 'lightweight',
         NOW() - INTERVAL '72 hours'
     ),
     (
         '00000000-0000-4000-8000-000000000102',
-        'FB1002', 'REF-1002', 'MC-B', 210, 'g/m2', 'knit',
+        'FB1002', 'REF-1002', 'MC-B', 210, 'g/m2', '1',
         '["STYLE002"]'::jsonb, '["PROC002","PROC003"]'::jsonb, 'soft handfeel',
         NOW() - INTERVAL '48 hours'
     ),
     (
         '00000000-0000-4000-8000-000000000103',
-        'FB1003', 'REF-1003', 'MC-C', 300, 'g/m2', 'woven',
+        'FB1003', 'REF-1003', 'MC-C', 300, 'g/m2', '2',
         '["STYLE003"]'::jsonb, '["PROC001","PROC004"]'::jsonb, 'heavy duty',
         NOW() - INTERVAL '24 hours'
     )

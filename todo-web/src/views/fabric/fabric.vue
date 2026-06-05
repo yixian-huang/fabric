@@ -125,6 +125,7 @@
   import OptionDialog from "@/components/OptionDialog.vue";
   // 导入 API 函数
   import { getFabricList, deleteFabric, getVisitorStats } from "@/api/fabric";
+  import { parseFabricListResponse } from "@/utils/fabric";
 
   // 分页数据
   const currentPage = ref(1);
@@ -165,9 +166,9 @@
       };
       
       const res = await getFabricList(params);
-      
-      fabricList.value = res?.results || [];
-      total.value = res?.count || 0;
+      const { items, total: listTotal } = parseFabricListResponse(res);
+      fabricList.value = items;
+      total.value = listTotal;
     } catch (error) {
       console.error('获取面料列表失败:', error);
       ElMessage.error(t('fabric.deleteFailed'));

@@ -11,6 +11,7 @@ import { VendorNoteCell } from './VendorNoteCell';
 import { Image } from 'antd';
 import { UsergroupDeleteOutlined } from '@ant-design/icons';
 import { renderCellContent } from '@/lib/utils';
+import { resolveCellStyle } from '@/lib/gridTransform';
 
 interface Shared {
   shared_key: string;
@@ -69,10 +70,14 @@ export const VendorSharedView: React.FC = () => {
       setColumns(data.project.columns || []);
       setRows(data.project.rows || []);
       setSharedData(data.shared || {});
-      setVendorData(data.project.vendor || null);
+      const vendorId = data.shared?.vendor || '';
+      setVendorData(
+        vendorId
+          ? { vendor_id: vendorId, name: data.shared?.vendor_name || vendorId }
+          : null
+      );
 
-      // 更新共享数据，确保包含vendor_id
-      const vendorId = data.project.vendor?.vendor_id || '';
+      // 更新共享数据，确保包含 vendor_id
       setSharedData({
         shared_key: data.shared?.shared_key || '',
         shared_password: data.shared?.shared_password || '',
@@ -197,17 +202,7 @@ export const VendorSharedView: React.FC = () => {
                       ></div>
                     );
 
-                    // 解析单元格样式
-                    let cellStyle: { backgroundColor?: string; textColor?: string } = {};
-                    try {
-                      if (cell.style) {
-                        cellStyle = typeof cell.style === 'string'
-                          ? JSON.parse(cell.style)
-                          : cell.style;
-                      }
-                    } catch (e) {
-                      console.error('解析单元格样式失败:', e);
-                    }
+                    const cellStyle = resolveCellStyle(cell.style, cell.style_data);
 
                     return (
                       <div
@@ -224,7 +219,9 @@ export const VendorSharedView: React.FC = () => {
                           color: cellStyle.textColor || 'inherit',
                         }}
                       >
-                        {renderCellContent(cell, column.type, projectData.base_url, sharedData, VendorNoteCell)}
+                        {renderCellContent(cell, column.type, projectData.base_url, sharedData, (props) => (
+                          <VendorNoteCell {...props} remarkApi="vendor-share" />
+                        ))}
                       </div>
                     );
                   })}

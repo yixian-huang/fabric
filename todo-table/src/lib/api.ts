@@ -5,6 +5,22 @@ import { toast } from '@/hooks/use-toast';
 // 导出 API 基础 URL
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+/** 从拦截器/envelope 响应中取出 data 载荷 */
+export function unwrapApiData<T>(response: unknown): T {
+  if (response == null || typeof response !== 'object') {
+    throw new Error('无效的响应');
+  }
+  const root = response as Record<string, unknown>;
+
+  if (typeof root.code === 'number' && root.data !== undefined) {
+    return root.data as T;
+  }
+  if (root.data !== undefined) {
+    return root.data as T;
+  }
+  return root as T;
+}
+
 // 创建 axios 实例
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -86,4 +102,4 @@ api.interceptors.response.use(
   }
 );
 
-export default api; 
+export default api;

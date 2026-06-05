@@ -1,5 +1,4 @@
-import { AxiosResponse } from 'axios';
-import api from './api';
+import api, { unwrapApiData } from './api';
 
 export interface LoginCredentials {
   username: string;
@@ -21,9 +20,12 @@ export interface AuthResponse {
 // 登录操作
 export const login = async (credentials: LoginCredentials): Promise<User> => {
   try {
-    const response: AxiosResponse<AuthResponse> = await api.post('/base/auth/login', credentials);
-    console.log(response);
-    const { user, token } = response.data;
+    const response = await api.post('/base/auth/login', credentials);
+    const { user, token } = unwrapApiData<AuthResponse>(response);
+
+    if (!token || !user) {
+      throw new Error('登录失败：未返回有效的 token');
+    }
     
     // 保存 token 到 localStorage
     localStorage.setItem('token', token);
