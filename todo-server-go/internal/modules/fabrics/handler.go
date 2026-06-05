@@ -40,6 +40,49 @@ func (h *Handler) ListPublic(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, 200, "获取公开面料列表成功", result)
 }
 
+func (h *Handler) GetPublicByReferenceCode(w http.ResponseWriter, r *http.Request) {
+	ref := strings.TrimSpace(chi.URLParam(r, "reference_code"))
+	f, err := h.svc.GetPublicByReferenceCode(ref)
+	if err != nil {
+		if errors.Is(err, ErrFabricNotFound) {
+			response.JSON(w, http.StatusNotFound, 40404, "面料不存在", nil)
+			return
+		}
+		response.JSON(w, http.StatusInternalServerError, 50001, "internal error", nil)
+		return
+	}
+	response.JSON(w, http.StatusOK, 200, "获取面料详情成功", f)
+}
+
+func (h *Handler) Sitemap(w http.ResponseWriter, r *http.Request) {
+	refs, err := h.svc.ListPublicReferenceCodes()
+	if err != nil {
+		response.JSON(w, http.StatusInternalServerError, 50001, "internal error", nil)
+		return
+	}
+	baseURL := publicBaseURL(r)
+	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(renderSitemapXML(baseURL, refs)))
+}
+
+func (h *Handler) OGFabricPage(w http.ResponseWriter, r *http.Request) {
+	ref := strings.TrimSpace(chi.URLParam(r, "reference_code"))
+	f, err := h.svc.GetPublicByReferenceCode(ref)
+	if err != nil {
+		if errors.Is(err, ErrFabricNotFound) {
+			http.NotFound(w, r)
+			return
+		}
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	baseURL := publicBaseURL(r)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(renderOGFabricPage(f, baseURL)))
+}
+
 func (h *Handler) GetOptions(w http.ResponseWriter, r *http.Request) {
 	categoryCode := normalizeOptionCategoryCode(r.URL.Query().Get("category_code"))
 	opts := h.svc.GetOptions(categoryCode)

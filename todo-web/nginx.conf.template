@@ -8,10 +8,17 @@ server {
     gzip on;
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
 
+    # 社交/搜索爬虫 UA（微信、Google、Facebook 等）
+    map $http_user_agent $is_social_bot {
+        default 0;
+        ~*(googlebot|bingbot|baiduspider|yandex|facebookexternalhit|twitterbot|linkedinbot|slackbot|telegrambot|whatsapp|micromessenger|wechat) 1;
+    }
+
     # 反代 Go API（VITE_API_BASE_URL=/api 时必需；变量 proxy_pass 避免启动时解析 upstream 失败）
     resolver 127.0.0.11 valid=30s ipv6=off;
+    set $api_upstream ${API_UPSTREAM_HOST}:${API_UPSTREAM_PORT};
+
     location /api/ {
-        set $api_upstream ${API_UPSTREAM_HOST}:${API_UPSTREAM_PORT};
         proxy_pass http://$api_upstream/api/;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
@@ -19,6 +26,27 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_read_timeout 120s;
+    }
+
+    # OG 预览页（服务端 HTML，供爬虫抓取）
+    location /og/ {
+        proxy_pass http://$api_upstream/og/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # 面料详情：爬虫走 OG HTML，用户走 SPA
+    location ~ ^/fabric/([^/]+)$ {
+        set $fabric_ref $1;
+        if ($fabric_ref = add) { break; }
+        if ($fabric_ref = edit) { break; }
+        if ($is_social_bot = 1) {
+            rewrite ^/fabric/(.*)$ /og/fabric/$1 last;
+        }
+        try_files $uri $uri/ /index.html;
     }
 
     location / {

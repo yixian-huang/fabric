@@ -2,10 +2,82 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 自定义样式 */
+@layer base {
+  :root {
+    --fabric-bg: #f7f4ef;
+    --fabric-bg-accent: #ece6dc;
+    --fabric-surface: #fffcf8;
+    --fabric-ink: #1c1917;
+    --fabric-muted: #78716c;
+    --fabric-accent: #9a7b4f;
+    --fabric-accent-soft: #f0e8dc;
+    --fabric-border: rgba(28, 25, 23, 0.08);
+    --fabric-shadow: 0 4px 24px rgba(28, 25, 23, 0.06);
+    --fabric-shadow-hover: 0 20px 48px rgba(28, 25, 23, 0.12);
+    --font-display: 'Cormorant Garamond', Georgia, serif;
+    --font-body: 'DM Sans', system-ui, sans-serif;
+    --admin-sidebar-bg: #1c1917;
+    --admin-sidebar-text: #faf8f5;
+    --admin-content-bg: #f7f4ef;
+  }
+
+  body {
+    font-family: var(--font-body);
+    color: var(--fabric-ink);
+    background: var(--fabric-bg);
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
 @layer components {
   .rounded-button {
     @apply rounded-md;
+  }
+
+  .fabric-page {
+    min-height: 100vh;
+    background:
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(154, 123, 79, 0.12), transparent 60%),
+      radial-gradient(ellipse 60% 40% at 100% 0%, rgba(236, 230, 220, 0.8), transparent 50%),
+      var(--fabric-bg);
+  }
+
+  .fabric-surface {
+    background: var(--fabric-surface);
+    border: 1px solid var(--fabric-border);
+    box-shadow: var(--fabric-shadow);
+  }
+
+  .fabric-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    background: var(--fabric-accent-soft);
+    color: var(--fabric-accent);
+    border: 1px solid rgba(154, 123, 79, 0.15);
+  }
+
+  .fabric-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.18rem 0.55rem;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    background: rgba(28, 25, 23, 0.04);
+    color: var(--fabric-muted);
+    border: 1px solid var(--fabric-border);
+  }
+
+  .fabric-search-panel {
+    @apply rounded-2xl;
+    background: var(--fabric-surface);
+    border: 1px solid var(--fabric-border);
+    box-shadow: var(--fabric-shadow);
   }
 }
 

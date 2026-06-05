@@ -36,6 +36,54 @@ type FabricInput struct {
 	Components    []Component
 }
 
+func (s *pgStore) GetFabricByReferenceCode(ctx context.Context, referenceCode string) (Fabric, error) {
+	referenceCode = strings.TrimSpace(referenceCode)
+	if referenceCode == "" {
+		return Fabric{}, ErrFabricNotFound
+	}
+	row := s.pool.QueryRow(ctx, `
+		SELECT fabric_id::text, code, COALESCE(reference_code, ''), merchant_code,
+		       COALESCE(weight, 0), weight_unit, fabric_type, style_codes, process_codes,
+		       remark, width, yarn_count, density, created_at, main_image_id::text
+		FROM fabrics WHERE reference_code = $1`, referenceCode)
+
+	f, err := scanFabric(row)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Fabric{}, ErrFabricNotFound
+	}
+	if err != nil {
+		return Fabric{}, err
+	}
+	components, err := s.loadComponents(ctx, []string{f.FabricID})
+	if err != nil {
+		return Fabric{}, err
+	}
+	f.Components = components[f.FabricID]
+	attachImageURLs(&f)
+	return f, nil
+}
+
+func (s *pgStore) ListPublicReferenceCodes(ctx context.Context) ([]string, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT reference_code FROM fabrics
+		WHERE reference_code IS NOT NULL AND TRIM(reference_code) <> ''
+		ORDER BY created_at DESC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]string, 0)
+	for rows.Next() {
+		var ref string
+		if err := rows.Scan(&ref); err != nil {
+			return nil, err
+		}
+		out = append(out, ref)
+	}
+	return out, rows.Err()
+}
+
 func (s *pgStore) GetFabric(ctx context.Context, fabricID string) (Fabric, error) {
 	row := s.pool.QueryRow(ctx, `
 		SELECT fabric_id::text, code, COALESCE(reference_code, ''), merchant_code,

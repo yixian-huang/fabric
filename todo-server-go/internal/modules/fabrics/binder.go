@@ -21,9 +21,13 @@ func NewBinder(pool *pgxpool.Pool, blob storage.Store) *Binder {
 }
 
 func (b *Binder) Bind(r chi.Router, auth func(http.Handler) http.Handler) {
+	r.Get("/og/fabric/{reference_code}", b.handler.OGFabricPage)
+
 	r.Route("/api/fabrics", func(cr chi.Router) {
 		cr.With(auth).Get("/list", b.handler.List)
 		cr.Get("/list_public", b.handler.ListPublic)
+		cr.Get("/public/{reference_code}", b.handler.GetPublicByReferenceCode)
+		cr.Get("/sitemap.xml", b.handler.Sitemap)
 		cr.Get("/get_options", b.handler.GetOptions)
 		cr.With(auth).Get("/check_fabric_code", b.handler.CheckFabricCode)
 		cr.With(auth).Post("/toggle_favorite", b.handler.ToggleFavorite)

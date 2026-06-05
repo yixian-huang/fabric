@@ -260,6 +260,14 @@ func (s *Service) DeleteVendor(ctx context.Context, id string) error {
 	return s.vendor.Delete(ctx, id)
 }
 
+func (s *Service) GetPublicByReferenceCode(referenceCode string) (Fabric, error) {
+	return s.store.GetFabricByReferenceCode(context.Background(), referenceCode)
+}
+
+func (s *Service) ListPublicReferenceCodes() ([]string, error) {
+	return s.store.ListPublicReferenceCodes(context.Background())
+}
+
 func (s *Service) GetFabric(fabricID, userID string) (Fabric, error) {
 	f, err := s.store.GetFabric(context.Background(), fabricID)
 	if err != nil {

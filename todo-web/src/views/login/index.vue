@@ -69,7 +69,7 @@ const handleLogin = async () => {
     ElMessage.success('登录成功，正在跳转到首页...');
     
     // 登录成功后跳转到首页
-    router.push('/fabric');
+    router.push('/admin');
   } catch (error: any) {
     // 错误处理已在store中完成
     console.error('登录失败', error);

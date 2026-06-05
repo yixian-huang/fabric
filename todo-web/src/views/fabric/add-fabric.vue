@@ -1,6 +1,6 @@
 <!-- The exported code uses Tailwind CSS. Install Tailwind CSS in your dev environment to ensure all styles work. -->
 <template>
-  <div class="min-h-screen bg-gray-50 py-10">
+  <div class="add-fabric-page min-h-screen bg-gray-50 py-10">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="bg-white rounded-lg shadow-lg p-8">
         <h1 class="text-2xl font-bold text-gray-800 mb-8">{{ pageTitle }}</h1>
@@ -654,7 +654,7 @@ const saveForm = async () => {
 
     if (result.code === 200) {
       ElMessage.success(isEditMode.value ? t('fabric.updateSuccess') : t('fabric.saveSuccess'));
-      router.push("/fabric");
+      router.push('/admin/fabrics');
     } else {
       // 处理后端返回的校验错误
       if (result.errors) {
@@ -710,13 +710,13 @@ const fetchFabricDetails = async (id: string) => {
       imageFileId.value = fetchedData.image_file_id || null;
     } else {
       ElMessage.error(result.message || t('fabric.loadingFailed'));
-      router.push('/fabric'); // 获取失败则返回列表页
+      router.push('/admin/fabrics');
     }
   } catch (error: any) {
     loadingInstance.close();
     ElMessage.error(t('fabric.loadingFailed') + ': ' + (error.message || t('fabric.unknownError')));
     console.error(t('fabric.loadingFailed')+":", error);
-    router.push('/fabric'); // 出错也返回列表页
+    router.push('/admin/fabrics');
   }
 };
 

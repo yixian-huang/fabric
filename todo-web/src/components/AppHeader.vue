@@ -3,26 +3,37 @@
   <div>
     <header class="app-header">
       <div class="header-content">
-        <h1 class="app-title">DAILY SILK FABRIC HUB</h1>
+        <router-link to="/" class="brand">
+          <span class="brand__mark" aria-hidden="true">◈</span>
+          <span class="brand__text">
+            <span class="brand__name">DAILY SILK</span>
+            <span class="brand__sub">Fabric Hub</span>
+          </span>
+        </router-link>
         <div class="header-actions">
           <LanguageSwitcher class="language-switcher" />
           <div v-if="!userStore.isLoggedIn" class="auth-buttons">
-            <el-button @click="showRegisterDialog = true">注册</el-button>
-            <el-button type="primary" @click="showLoginDialog = true">登录</el-button>
+            <el-button round class="header-btn header-btn--ghost" @click="showRegisterDialog = true">
+              {{ t('auth.register') }}
+            </el-button>
+            <el-button round type="primary" class="header-btn header-btn--primary" @click="showLoginDialog = true">
+              {{ t('auth.login') }}
+            </el-button>
           </div>
           <div v-else class="user-actions">
-            <el-button @click="showFavoritePanel = true">
+            <el-button round class="header-btn header-btn--ghost" @click="showFavoritePanel = true">
               <el-icon><Star /></el-icon>
-              {{ $t("favorite.myFavorites") }} ({{ favoriteStore.favoriteCount }})
+              {{ t('favorite.myFavorites') }}
+              <span class="header-count">{{ favoriteStore.favoriteCount }}</span>
             </el-button>
             <el-dropdown>
-              <el-button>
+              <el-button round class="header-btn header-btn--ghost">
                 <el-icon><User /></el-icon>
                 {{ userStore.username }}
               </el-button>
               <template #dropdown>
                 <el-dropdown-menu>
-                  <el-dropdown-item @click="handleLogout">退出登录</el-dropdown-item>
+                  <el-dropdown-item @click="handleLogout">{{ t('auth.logout') }}</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
@@ -30,130 +41,187 @@
         </div>
       </div>
     </header>
-    
-    <!-- 登录对话框 -->
-    <LoginDialog 
-      v-model="showLoginDialog" 
+
+    <LoginDialog
+      v-model="showLoginDialog"
       @success="handleLoginSuccess"
-      @switch-to-register="handleSwitchToRegister" 
+      @switch-to-register="handleSwitchToRegister"
     />
-    
-    <!-- 注册对话框 -->
-    <RegisterDialog 
-      v-model="showRegisterDialog" 
+
+    <RegisterDialog
+      v-model="showRegisterDialog"
       @success="handleRegisterSuccess"
       @switch-to-login="handleSwitchToLogin"
     />
-    
-    <!-- 收藏面板 -->
+
     <FavoritePanel v-model="showFavoritePanel" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { Star, User } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import { useRouter } from 'vue-router'
-import { useUserStore } from '../stores/user'
-import { useFavoriteStore } from '../stores/favorite'
-import LanguageSwitcher from './LanguageSwitcher.vue'
-import LoginDialog from './auth/LoginDialog.vue'
-import RegisterDialog from './auth/RegisterDialog.vue'
-import FavoritePanel from './FavoritePanel.vue'
+import { ref, computed } from 'vue';
+import { Star, User } from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus';
+import { useRouter } from 'vue-router';
+import { useUserStore } from '../stores/user';
+import { useFavoriteStore } from '../stores/favorite';
+import LanguageSwitcher from './LanguageSwitcher.vue';
+import LoginDialog from './auth/LoginDialog.vue';
+import RegisterDialog from './auth/RegisterDialog.vue';
+import FavoritePanel from './FavoritePanel.vue';
 import { useI18n } from 'vue-i18n';
-  
+
 const { t } = useI18n();
-const router = useRouter()
-const userStore = useUserStore()
-const favoriteStore = useFavoriteStore()
+const router = useRouter();
+const userStore = useUserStore();
+const favoriteStore = useFavoriteStore();
 
-const showRegisterDialog = ref(false)
-const showFavoritePanel = ref(false)
+const showRegisterDialog = ref(false);
+const showFavoritePanel = ref(false);
 
-// 使用状态管理中的 showLoginDialog
 const showLoginDialog = computed({
   get: () => userStore.showLoginDialog,
   set: (value) => {
     if (value) {
-      userStore.openLoginDialog()
+      userStore.openLoginDialog();
     } else {
-      userStore.closeLoginDialog()
+      userStore.closeLoginDialog();
     }
-  }
-})
+  },
+});
 
 const handleLoginSuccess = () => {
-  showLoginDialog.value = false
-  ElMessage.success('登录成功')
-  // 登录成功后获取收藏数量
-  favoriteStore.fetchFavoriteCount()
-}
+  showLoginDialog.value = false;
+  ElMessage.success(t('auth.loginSuccess'));
+  favoriteStore.fetchFavoriteCount();
+};
 
 const handleRegisterSuccess = () => {
-  showRegisterDialog.value = false
-  ElMessage.success('注册成功，请查收邮件进行验证')
-}
+  showRegisterDialog.value = false;
+  ElMessage.success(t('auth.registerSuccess'));
+};
 
 const handleSwitchToRegister = () => {
-  showLoginDialog.value = false
-  showRegisterDialog.value = true
-}
+  showLoginDialog.value = false;
+  showRegisterDialog.value = true;
+};
 
 const handleSwitchToLogin = () => {
-  showRegisterDialog.value = false
-  showLoginDialog.value = true
-}
+  showRegisterDialog.value = false;
+  showLoginDialog.value = true;
+};
 
 const handleLogout = () => {
-  userStore.logout()
-  ElMessage.success('退出登录成功')
-  router.push('/')
-}
+  userStore.logout();
+  ElMessage.success(t('auth.logoutSuccess'));
+  router.push('/');
+};
 </script>
 
 <style scoped>
 .app-header {
-  background-color: #64748b;
-  color: white;
-  padding: 1rem 2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(28, 25, 23, 0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 0.85rem 1.5rem;
 }
 
 .header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  max-width: 1400px;
+  max-width: 1440px;
   margin: 0 auto;
+  gap: 1rem;
 }
 
-.app-title {
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin: 0;
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.brand__mark {
+  font-size: 1.25rem;
+  color: #c9a962;
+  line-height: 1;
+}
+
+.brand__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.brand__name {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #faf8f5;
+}
+
+.brand__sub {
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(250, 248, 245, 0.55);
 }
 
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .auth-buttons,
 .user-actions {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.header-btn--ghost {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: rgba(250, 248, 245, 0.9) !important;
+}
+
+.header-btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(201, 169, 98, 0.4) !important;
+}
+
+.header-btn--primary {
+  background: linear-gradient(135deg, #b8956a 0%, #9a7b4f 100%) !important;
+  border: none !important;
+  color: #fff !important;
+}
+
+.header-count {
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: rgba(201, 169, 98, 0.25);
+  color: #e8d5a8;
 }
 
 @media (max-width: 768px) {
   .header-content {
     flex-direction: column;
-    gap: 1rem;
+    align-items: stretch;
   }
-  
-  .app-title {
-    font-size: 1.2rem;
+
+  .header-actions {
+    justify-content: center;
   }
 }
 </style>

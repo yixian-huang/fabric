@@ -14,6 +14,13 @@ export function getFabricList(params: any) {
   });
 }
 
+// 获取公开面料详情（不需要认证）
+export function getPublicFabricDetail(referenceCode: string) {
+  return request(`/fabrics/public/${encodeURIComponent(referenceCode)}`, {
+    method: 'get',
+  });
+}
+
 // 获取公开面料列表（不需要认证）
 export function getPublicFabricList(params: any) {
   // 使用axios直接创建请求，不使用request实例（因为request会自动添加token）
