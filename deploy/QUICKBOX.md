@@ -15,10 +15,11 @@
 - `VITE_API_BASE_URL=/api`（由容器内 nginx 反代到 API）
 - `fabric-table` 另需 `VITE_BASE_PATH=/grid/`
 
-Web/Table 容器环境变量（反代目标，默认 `http://host.docker.internal:18081`）：
+Web/Table 容器环境变量（nginx `/api/` 反代，默认 `172.17.0.1:18081` 经 Docker 桥接访问宿主机 API）：
 
-- `API_UPSTREAM=http://172.81.57.29:18081`（若 `host.docker.internal` 不可用）
-- 建议为 `fabric-web`、`fabric-table` 配置 `extraHosts: ["host.docker.internal:host-gateway"]`
+- `API_UPSTREAM_HOST=172.81.57.29`（桥接不可用时改为宿主机 IP）
+- `API_UPSTREAM_PORT=18081`
+- 建议 QB `buildArgs` 使用 `VITE_API_BASE_URL=/api`（同源走反代），勿写绝对 API 地址
 
 ## Deploy hooks
 

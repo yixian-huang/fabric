@@ -32,7 +32,8 @@ FROM nginx:stable-alpine as production-stage
 # 复制构建产物到 Nginx 目录
 COPY --from=build-stage /app/dist /usr/share/nginx/html
 
-ENV API_UPSTREAM=http://host.docker.internal:18081
+ENV API_UPSTREAM_HOST=172.17.0.1
+ENV API_UPSTREAM_PORT=18081
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 
 # 暴露 80 端口

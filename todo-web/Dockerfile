@@ -30,8 +30,9 @@ FROM nginx:stable-alpine as production-stage
 # 复制构建产物到 Nginx 目录
 COPY --from=build-stage /app/dist /usr/share/nginx/html
 
-# API 反代目标（Quick-Box 单机部署可在环境变量覆盖）
-ENV API_UPSTREAM=http://host.docker.internal:18081
+# API 反代目标（Docker 桥接默认可达宿主机映射端口；QB 可覆盖为 172.81.57.29）
+ENV API_UPSTREAM_HOST=172.17.0.1
+ENV API_UPSTREAM_PORT=18081
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 
 # 暴露 80 端口
