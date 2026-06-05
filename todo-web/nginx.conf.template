@@ -1,3 +1,8 @@
+map $http_user_agent $is_social_bot {
+    default 0;
+    ~*(googlebot|bingbot|baiduspider|yandex|facebookexternalhit|twitterbot|linkedinbot|slackbot|telegrambot|whatsapp|micromessenger|wechat) 1;
+}
+
 server {
     listen 80;
     server_name localhost;
@@ -7,12 +12,6 @@ server {
 
     gzip on;
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
-
-    # 社交/搜索爬虫 UA（微信、Google、Facebook 等）
-    map $http_user_agent $is_social_bot {
-        default 0;
-        ~*(googlebot|bingbot|baiduspider|yandex|facebookexternalhit|twitterbot|linkedinbot|slackbot|telegrambot|whatsapp|micromessenger|wechat) 1;
-    }
 
     # 反代 Go API（VITE_API_BASE_URL=/api 时必需；变量 proxy_pass 避免启动时解析 upstream 失败）
     resolver 127.0.0.11 valid=30s ipv6=off;
