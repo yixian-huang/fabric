@@ -16,7 +16,7 @@ RUN pnpm install
 # 复制项目文件
 COPY . .
 
-ARG VITE_API_BASE_URL=/api
+ARG VITE_API_BASE_URL=http://172.81.57.29:18081/api
 ARG VITE_BASE_PATH=/grid/
 ENV NODE_ENV=production
 ENV VITE_I18N_DEBUG=false
