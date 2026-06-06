@@ -9,16 +9,15 @@
 |------|------|------------|------|
 | `fabric` (API) | `fabric-api` | 18081 | http://172.81.57.29:18081/healthz |
 | `fabric-web` | `fabric-web` | 18082 | http://172.81.57.29:18082/ |
-| ~~`fabric-table`~~ | — | 18083 | **暂不维护**（后期可能独立仓库） |
+| ~~`fabric-table`~~ | — | — | 已迁至 [todo-grid](https://github.com/yixian-huang/todo-grid)，短期不部署 |
 
 日常升级：`./scripts/qb-handoff.sh main`（读 Handoff JSON，推荐）或 `./scripts/qb-deploy.sh main`
 
 前端构建参数（镜像内 baked）：
 
 - `VITE_API_BASE_URL=/api`（由容器内 nginx 反代到 API）
-- `fabric-table` 另需 `VITE_BASE_PATH=/grid/`
 
-Web/Table 容器环境变量（nginx `/api/` 反代，默认 `172.17.0.1:18081` 经 Docker 桥接访问宿主机 API）：
+Web 容器环境变量（nginx `/api/` 反代，默认 `172.17.0.1:18081` 经 Docker 桥接访问宿主机 API）：
 
 - `API_UPSTREAM_HOST=172.81.57.29`（桥接不可用时改为宿主机 IP）
 - `API_UPSTREAM_PORT=18081`

@@ -64,31 +64,7 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/admin/suppliers/SupplierList.vue'),
         meta: { adminTitleKey: 'admin.suppliers' },
       },
-      {
-        path: 'projects',
-        name: 'AdminProjects',
-        component: () => import('@/views/admin/projects/ProjectList.vue'),
-        meta: { adminTitleKey: 'admin.project' },
-      },
-      {
-        path: 'templates',
-        name: 'AdminTemplates',
-        component: () => import('@/views/admin/templates/TemplateList.vue'),
-        meta: { adminTitleKey: 'admin.template' },
-      },
     ],
-  },
-  {
-    path: '/menu',
-    redirect: '/admin/projects',
-  },
-  {
-    path: '/menu/project',
-    redirect: '/admin/projects',
-  },
-  {
-    path: '/menu/template',
-    redirect: '/admin/templates',
   },
   {
     path: '/menu/supplier',

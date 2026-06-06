@@ -15,7 +15,6 @@ import (
 	"todo-server-go/internal/http/router"
 	baseModule "todo-server-go/internal/modules/base"
 	fabricsModule "todo-server-go/internal/modules/fabrics"
-	gridModule "todo-server-go/internal/modules/grid"
 	setupModule "todo-server-go/internal/modules/setup"
 )
 
@@ -32,10 +31,9 @@ func main() {
 
 	baseBinder := baseModule.NewBinder(container.PG, container.JWT, container.Storage)
 	fabricsBinder := fabricsModule.NewBinder(container.PG, container.Storage)
-	gridBinder := gridModule.NewBinder(container.PG, container.Storage)
 	setupBinder := setupModule.NewBinder(container.Setup)
 
-	r := router.New(container.JWT, baseBinder, fabricsBinder, gridBinder, setupBinder)
+	r := router.New(container.JWT, baseBinder, fabricsBinder, setupBinder)
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,
 		Handler:           r,

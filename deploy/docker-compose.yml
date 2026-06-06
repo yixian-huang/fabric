@@ -108,12 +108,6 @@ services:
     restart: unless-stopped
     pull_policy: always
 
-  todo-table:
-    image: ${FABRIC_IMAGE_TABLE:?set FABRIC_IMAGE_TABLE}
-    container_name: fabric-table
-    restart: unless-stopped
-    pull_policy: always
-
   gateway:
     image: nginx:1.27-alpine
     container_name: fabric-gateway
@@ -122,8 +116,6 @@ services:
       api:
         condition: service_healthy
       todo-web:
-        condition: service_started
-      todo-table:
         condition: service_started
     ports:
       - "${HTTP_PORT:-8088}:80"

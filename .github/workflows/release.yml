@@ -58,19 +58,6 @@ jobs:
             ${{ env.REGISTRY }}/${{ github.repository_owner }}/fabric-web:${{ steps.ver.outputs.version }}
             ${{ env.REGISTRY }}/${{ github.repository_owner }}/fabric-web:latest
 
-      - name: Build and push fabric-table
-        uses: docker/build-push-action@v6
-        with:
-          context: ./todo-table
-          platforms: linux/amd64,linux/arm64
-          push: true
-          build-args: |
-            VITE_API_BASE_URL=/api
-            VITE_BASE_PATH=/grid/
-          tags: |
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/fabric-table:${{ steps.ver.outputs.version }}
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/fabric-table:latest
-
       - name: Package release bundle
         run: |
           chmod +x scripts/publish-release.sh

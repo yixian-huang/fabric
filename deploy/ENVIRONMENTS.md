@@ -9,7 +9,7 @@
 | **编排** | Quick-Box Docker（compose 风格） | 1Panel OpenResty 静态站 + 独立 `fabric-api` 容器 |
 | **Web** | `fabric-web` 容器 `:18082` | OpenResty `…/index/dist` |
 | **API** | `fabric` 容器 `:18081` | `fabric-api`，`--network host`，`:8081` |
-| **Table** | QB 有 `fabric-table`（**暂不在此维护**） | 1Panel `/grid/`（**暂不在此维护**） |
+| **Table** | 已迁至 [todo-grid](https://github.com/yixian-huang/todo-grid) | 生产 `/grid/` 暂不维护 |
 | **日常升级** | `./scripts/qb-deploy.sh main` | `./scripts/upgrade-fabricoption-prod.sh`（当前） |
 | **QB 服务器** | `172.81.57.29:22` · online | **`Goddady - Fabric`** · `92.205.17.202:57122` · **online** |
 | **QB 环境** | `fabric` + `fabric-web` 已配置 | 尚未建 prod 环境（仍走 1Panel + SSH 脚本） |
@@ -52,9 +52,10 @@ cp deploy/.env.prod.example deploy/.env.prod   # SSH 与路径
 
 **后续（可选）：** 在 QB 为生产新建 `fabric-prod` / `fabric-web-prod` 环境，`deployServerNames` 指向 `Goddady - Fabric`，并用 `postDeployScript` 把 web 静态同步到 1Panel `index/dist`，或逐步把生产迁到与测试一致的 Docker 反代栈。
 
-## todo-table
+## Todo Grid（独立仓库）
 
-本期 **不纳入** 测试/生产升级脚本；QB 上保留 `fabric-table` 环境仅为历史兼容。后续可能拆成独立仓库再接入 QB。
+表格应用已拆至 **[yixian-huang/todo-grid](https://github.com/yixian-huang/todo-grid)**（`grid-api` + `todo-table`）。  
+本仓库 **不再包含** Grid 代码；短期不部署。QB 上 `fabric-table` 环境可忽略或停用。
 
 ## CI/CD 建议
 

@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// CORS allows browser clients (todo-web / todo-table dev servers) to call the API cross-origin.
+// CORS allows browser clients (todo-web dev server) to call the API cross-origin.
 func CORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := strings.TrimSpace(r.Header.Get("Origin"))

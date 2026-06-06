@@ -1,4 +1,4 @@
-# Fabric 全栈自托管：todo-server-go + todo-web + todo-table
+# Fabric 自托管：todo-server-go + todo-web
 # 用法: ./install.sh  或  docker compose up -d --build
 
 name: fabric
@@ -112,16 +112,6 @@ services:
     container_name: fabric-web
     restart: unless-stopped
 
-  todo-table:
-    build:
-      context: ./todo-table
-      dockerfile: Dockerfile
-      args:
-        VITE_API_BASE_URL: /api
-        VITE_BASE_PATH: /grid/
-    container_name: fabric-table
-    restart: unless-stopped
-
   gateway:
     image: nginx:1.27-alpine
     container_name: fabric-gateway
@@ -130,8 +120,6 @@ services:
       api:
         condition: service_healthy
       todo-web:
-        condition: service_started
-      todo-table:
         condition: service_started
     ports:
       - "${HTTP_PORT:-8088}:80"

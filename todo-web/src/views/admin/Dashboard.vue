@@ -27,8 +27,6 @@
           <el-button round @click="router.push('/admin/fabrics')">{{ t('admin.fabrics') }}</el-button>
           <el-button round @click="router.push('/admin/options')">{{ t('admin.options') }}</el-button>
           <el-button round @click="router.push('/admin/suppliers')">{{ t('admin.suppliers') }}</el-button>
-          <el-button round @click="router.push('/admin/projects')">{{ t('admin.project') }}</el-button>
-          <el-button round @click="router.push('/admin/templates')">{{ t('admin.template') }}</el-button>
           <el-button round @click="router.push('/')">{{ t('admin.viewStorefront') }}</el-button>
         </div>
       </section>

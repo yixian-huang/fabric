@@ -48,7 +48,6 @@ sha256_file() {
 
 IMAGE_API="${FABRIC_REGISTRY}/fabric-api:${VERSION}"
 IMAGE_WEB="${FABRIC_REGISTRY}/fabric-web:${VERSION}"
-IMAGE_TABLE="${FABRIC_REGISTRY}/fabric-table:${VERSION}"
 
 info() { echo "[publish] $*"; }
 
@@ -68,22 +67,15 @@ if [[ "$BUNDLE_ONLY" -eq 0 ]]; then
   docker build -t "$IMAGE_WEB" \
     --build-arg VITE_API_BASE_URL=/api \
     "$ROOT/todo-web"
-  docker build -t "$IMAGE_TABLE" \
-    --build-arg VITE_API_BASE_URL=/api \
-    --build-arg VITE_BASE_PATH=/grid/ \
-    "$ROOT/todo-table"
 
   if [[ "$PUSH" -eq 1 ]]; then
     info "推送镜像..."
     docker push "$IMAGE_API"
     docker push "$IMAGE_WEB"
-    docker push "$IMAGE_TABLE"
     docker tag "$IMAGE_API" "${FABRIC_REGISTRY}/fabric-api:latest"
     docker tag "$IMAGE_WEB" "${FABRIC_REGISTRY}/fabric-web:latest"
-    docker tag "$IMAGE_TABLE" "${FABRIC_REGISTRY}/fabric-table:latest"
     docker push "${FABRIC_REGISTRY}/fabric-api:latest"
     docker push "${FABRIC_REGISTRY}/fabric-web:latest"
-    docker push "${FABRIC_REGISTRY}/fabric-table:latest"
   fi
 else
   info "跳过镜像构建 (--bundle-only)"
@@ -115,8 +107,7 @@ cat > "$RELEASE_DIR/manifest.json" <<EOF
   "registry": "${FABRIC_REGISTRY}",
   "images": {
     "api": "${IMAGE_API}",
-    "web": "${IMAGE_WEB}",
-    "table": "${IMAGE_TABLE}"
+    "web": "${IMAGE_WEB}"
   },
   "files": {
     "docker-compose.yml": "${SUM_COMPOSE}",

@@ -304,7 +304,6 @@ POSTGRES_DSN=${POSTGRES_DSN}
 FABRIC_VERSION=${FABRIC_VERSION:-}
 FABRIC_IMAGE_API=${FABRIC_IMAGE_API:-}
 FABRIC_IMAGE_WEB=${FABRIC_IMAGE_WEB:-}
-FABRIC_IMAGE_TABLE=${FABRIC_IMAGE_TABLE:-}
 EOF
 }
 
@@ -316,27 +315,21 @@ install_lib_print_noninteractive_hint() {
   echo ""
 }
 
-# 校验 gateway 路由：/ 应为管理端，/grid/ 应为表格端，且静态资源可访问
+# 校验 gateway 路由：/ 应为管理端，且静态资源可访问
 install_lib_verify_frontend() {
   local port="${HTTP_PORT:-8088}"
-  local root_html grid_html asset code
+  local root_html asset code
 
   root_html="$(curl -fsS "http://127.0.0.1:${port}/" 2>/dev/null || true)"
-  grid_html="$(curl -fsS "http://127.0.0.1:${port}/grid/" 2>/dev/null || true)"
 
-  if [[ -z "$root_html" || -z "$grid_html" ]]; then
+  if [[ -z "$root_html" ]]; then
     warn_msg "无法访问前端页面，请检查 gateway 是否监听 ${port}"
     return 1
   fi
 
   if echo "$root_html" | grep -q 'id="root"'; then
-    error_msg "管理端 (/) 返回了表格应用 — FABRIC_IMAGE_WEB / FABRIC_IMAGE_TABLE 可能写反"
-    error_msg "请编辑 .env 后执行: docker compose up -d --force-recreate todo-web todo-table gateway"
-    return 1
-  fi
-  if echo "$grid_html" | grep -q 'id="app"'; then
-    error_msg "表格端 (/grid/) 返回了管理应用 — FABRIC_IMAGE_WEB / FABRIC_IMAGE_TABLE 可能写反"
-    error_msg "请编辑 .env 后执行: docker compose up -d --force-recreate todo-web todo-table gateway"
+    error_msg "管理端 (/) 返回了非预期应用 — 请检查 FABRIC_IMAGE_WEB 是否为 fabric-web 镜像"
+    error_msg "请编辑 .env 后执行: docker compose up -d --force-recreate todo-web gateway"
     return 1
   fi
 
@@ -366,7 +359,6 @@ install_lib_print_success() {
   fi
   echo "  首次配置向导:  http://${host}:${port}/setup"
   echo "  管理端:        http://${host}:${port}/"
-  echo "  表格端:        http://${host}:${port}/grid/"
   echo "  健康检查:      http://${host}:${port}/healthz"
   echo ""
   echo "  默认管理员:    ${BOOTSTRAP_ADMIN_USER} / ${BOOTSTRAP_ADMIN_PASSWORD}"

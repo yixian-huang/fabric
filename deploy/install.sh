@@ -187,9 +187,8 @@ fetch_release() {
 
   IMAGE_API="$(json_nested_get images api "$FABRIC_INSTALL_DIR/manifest.json")"
   IMAGE_WEB="$(json_nested_get images web "$FABRIC_INSTALL_DIR/manifest.json")"
-  IMAGE_TABLE="$(json_nested_get images table "$FABRIC_INSTALL_DIR/manifest.json")"
 
-  if [[ -z "$IMAGE_API" || -z "$IMAGE_WEB" || -z "$IMAGE_TABLE" ]]; then
+  if [[ -z "$IMAGE_API" || -z "$IMAGE_WEB" ]]; then
     error "manifest.json 缺少镜像地址"
     exit 1
   fi
@@ -263,7 +262,6 @@ ensure_env() {
   [[ -n "$manifest_version" ]] && FABRIC_VERSION="$manifest_version"
   FABRIC_IMAGE_API="${IMAGE_API}"
   FABRIC_IMAGE_WEB="${IMAGE_WEB}"
-  FABRIC_IMAGE_TABLE="${IMAGE_TABLE}"
 
   local skip_finalize=0
   [[ "$upgrade_mode" -eq 1 ]] && skip_finalize=1
@@ -344,10 +342,10 @@ main() {
   wait_for_api || true
 
   if ! install_lib_verify_frontend; then
-    warn "前端校验未通过，尝试强制重建 web/table/gateway..."
-    "${COMPOSE[@]}" -f docker-compose.yml up -d --force-recreate todo-web todo-table gateway
+    warn "前端校验未通过，尝试强制重建 web/gateway..."
+    "${COMPOSE[@]}" -f docker-compose.yml up -d --force-recreate todo-web gateway
     sleep 3
-    install_lib_verify_frontend || warn "仍有问题：请检查 .env 中 FABRIC_IMAGE_WEB / FABRIC_IMAGE_TABLE 是否对应 fabric-web / fabric-table 镜像"
+    install_lib_verify_frontend || warn "仍有问题：请检查 .env 中 FABRIC_IMAGE_WEB 是否为 fabric-web 镜像"
   fi
 
   local host

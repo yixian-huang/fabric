@@ -7,7 +7,7 @@
 install_lib_compose_services_to_pull() {
   local db_eff
   db_eff="$(install_lib_effective_db_profile)"
-  COMPOSE_PULL_SERVICES=(api todo-web todo-table gateway)
+  COMPOSE_PULL_SERVICES=(api todo-web gateway)
   case "$db_eff" in
     embedded)
       COMPOSE_PULL_SERVICES+=(postgres redis)
@@ -227,12 +227,6 @@ API_HEALTH
     restart: unless-stopped
     pull_policy: always
 
-  todo-table:
-    image: ${FABRIC_IMAGE_TABLE:?set FABRIC_IMAGE_TABLE}
-    container_name: fabric-table
-    restart: unless-stopped
-    pull_policy: always
-
   gateway:
     image: nginx:1.27-alpine
     container_name: fabric-gateway
@@ -241,8 +235,6 @@ API_HEALTH
       api:
         condition: service_healthy
       todo-web:
-        condition: service_started
-      todo-table:
         condition: service_started
     ports:
       - "${HTTP_PORT:-8088}:80"
