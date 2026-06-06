@@ -19,6 +19,10 @@
     --admin-sidebar-bg: #1c1917;
     --admin-sidebar-text: #faf8f5;
     --admin-content-bg: #f7f4ef;
+    --el-color-primary: #9a7b4f;
+    --el-color-primary-light-3: #b8956a;
+    --el-color-primary-light-5: #c9a962;
+    --el-color-primary-dark-2: #7d6340;
   }
 
   body {
@@ -79,6 +83,57 @@
     border: 1px solid var(--fabric-border);
     box-shadow: var(--fabric-shadow);
   }
+
+  .auth-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.25rem;
+  }
+
+  .auth-card {
+    width: 100%;
+    max-width: 420px;
+    padding: 2rem 2rem 1.75rem;
+    border-radius: 20px;
+  }
+
+  .auth-card__brand {
+    text-align: center;
+    margin-bottom: 1.75rem;
+  }
+
+  .auth-card__mark {
+    display: block;
+    font-size: 1.5rem;
+    color: var(--fabric-accent);
+    margin-bottom: 0.65rem;
+  }
+
+  .auth-card__title {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--fabric-ink);
+    margin: 0 0 0.35rem;
+  }
+
+  .auth-card__subtitle {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--fabric-muted);
+    margin: 0;
+  }
+
+  .fabric-table {
+    --el-table-header-bg-color: var(--fabric-accent-soft);
+    --el-table-border-color: var(--fabric-border);
+    --el-table-row-hover-bg-color: rgba(240, 232, 220, 0.45);
+    --el-table-bg-color: transparent;
+    --el-table-tr-bg-color: transparent;
+  }
 }
 
 /* 自定义滚动条样式 */
@@ -115,4 +170,79 @@ input[type=number] {
 /* 拖拽样式 */
 [draggable=true] {
   cursor: move;
+}
+
+/* Auth dialog（teleport 到 body，需全局样式） */
+.fabric-auth-dialog.el-dialog {
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--fabric-shadow-hover);
+  border: 1px solid var(--fabric-border);
+}
+
+.fabric-auth-dialog .el-dialog__header {
+  margin: 0;
+  padding: 1.5rem 1.75rem 0;
+}
+
+.fabric-auth-dialog .el-dialog__body {
+  padding: 1.25rem 1.75rem 0.5rem;
+}
+
+.fabric-auth-dialog .el-dialog__footer {
+  padding: 0.75rem 1.75rem 1.5rem;
+}
+
+.fabric-auth-dialog__header {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.fabric-auth-dialog__mark {
+  font-size: 1.35rem;
+  color: var(--fabric-accent);
+  line-height: 1;
+}
+
+.fabric-auth-dialog__title {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--fabric-ink);
+  margin: 0 0 0.2rem;
+}
+
+.fabric-auth-dialog__subtitle {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fabric-muted);
+  margin: 0;
+}
+
+.fabric-auth-dialog .el-input__wrapper {
+  border-radius: 10px;
+  box-shadow: 0 0 0 1px var(--fabric-border) inset;
+}
+
+.fabric-auth-dialog .el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 1px var(--fabric-accent) inset !important;
+}
+
+.fabric-auth-link {
+  color: var(--fabric-accent);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.fabric-auth-link:hover {
+  text-decoration: underline;
+}
+
+.fabric-auth-dialog .el-button--primary {
+  background: linear-gradient(135deg, #b8956a 0%, #9a7b4f 100%);
+  border: none;
 } 

@@ -301,6 +301,8 @@ export default {
     registerFailed: '注册失败',
     registerSuccess: '注册成功，请查收邮件进行验证',
     loginSuccess: '登录成功',
+    loggingIn: '登录中...',
+    credentialsRequired: '用户名和密码不能为空',
     logoutSuccess: '退出登录成功'
   },
   

@@ -290,6 +290,8 @@ export default {
     registerFailed: 'Register failed',
     registerSuccess: 'Register success, please check your email for verification',
     loginSuccess: 'Login success',
+    loggingIn: 'Signing in...',
+    credentialsRequired: 'Username and password are required',
     logout: 'Logout',
     logoutSuccess: 'Logout success',
     usernameRequired: 'Please enter your username',

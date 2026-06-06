@@ -1,41 +1,49 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-md w-full space-y-8">
-      <div>
-        <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          账号登录
-        </h2>
+  <div class="auth-page fabric-page">
+    <div class="auth-card fabric-surface">
+      <div class="auth-card__brand">
+        <span class="auth-card__mark" aria-hidden="true">◈</span>
+        <h1 class="auth-card__title">{{ t('auth.login') }}</h1>
+        <p class="auth-card__subtitle">DAILY SILK · Fabric Hub</p>
       </div>
-      <form class="mt-8 space-y-6" @submit.prevent="handleLogin">
-        <div class="rounded-md shadow-sm space-y-4">
-          <div>
-            <el-input 
-              v-model="username" 
-              placeholder="用户名" 
-              :disabled="loading"
-            />
-          </div>
-          <div>
-            <el-input 
-              v-model="password" 
-              type="password" 
-              placeholder="密码" 
-              :disabled="loading"
-            />
-          </div>
-        </div>
 
-        <div>
-          <el-button 
-            type="primary" 
-            native-type="submit" 
-            class="w-full" 
-            :loading="loading"
-          >
-            {{ loading ? '登录中...' : '登录' }}
-          </el-button>
-        </div>
-      </form>
+      <el-form class="auth-form" @submit.prevent="handleLogin">
+        <el-form-item>
+          <el-input
+            v-model="username"
+            :placeholder="t('auth.usernamePlaceholder')"
+            prefix-icon="User"
+            size="large"
+            :disabled="loading"
+          />
+        </el-form-item>
+        <el-form-item>
+          <el-input
+            v-model="password"
+            type="password"
+            :placeholder="t('auth.passwordPlaceholder')"
+            prefix-icon="Lock"
+            size="large"
+            show-password
+            :disabled="loading"
+            @keyup.enter="handleLogin"
+          />
+        </el-form-item>
+
+        <el-button
+          type="primary"
+          native-type="submit"
+          round
+          class="auth-submit"
+          :loading="loading"
+        >
+          {{ loading ? t('auth.loggingIn') : t('auth.login') }}
+        </el-button>
+      </el-form>
+
+      <p class="auth-back">
+        <router-link to="/">{{ t('common.backToHome') }}</router-link>
+      </p>
     </div>
   </div>
 </template>
@@ -44,41 +52,73 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
+import { useI18n } from 'vue-i18n';
 import { useUserStore } from '@/stores/user';
 
 const username = ref('');
 const password = ref('');
 const router = useRouter();
 const userStore = useUserStore();
+const { t } = useI18n();
 
 const loading = computed(() => userStore.loading);
 
 const handleLogin = async () => {
   if (!username.value || !password.value) {
-    ElMessage.error('用户名和密码不能为空');
+    ElMessage.error(t('auth.credentialsRequired'));
     return;
   }
 
   try {
-    // 调用登录API
     await userStore.login({
       username: username.value,
-      password: password.value
+      password: password.value,
     });
-    
-    ElMessage.success('登录成功，正在跳转到首页...');
-    
-    // 登录成功后跳转到首页
+
+    ElMessage.success(t('auth.loginSuccess'));
     router.push('/admin');
-  } catch (error: any) {
-    // 错误处理已在store中完成
+  } catch (error) {
     console.error('登录失败', error);
   }
 };
 </script>
 
 <style scoped>
-.el-button {
-  height: 40px;
+.auth-form :deep(.el-form-item) {
+  margin-bottom: 1rem;
 }
-</style> 
+
+.auth-form :deep(.el-input__wrapper) {
+  border-radius: 10px;
+  box-shadow: 0 0 0 1px var(--fabric-border) inset;
+}
+
+.auth-form :deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px var(--fabric-accent) inset !important;
+}
+
+.auth-submit {
+  width: 100%;
+  height: 44px;
+  margin-top: 0.5rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #b8956a 0%, #9a7b4f 100%) !important;
+  border: none !important;
+}
+
+.auth-back {
+  margin: 1.25rem 0 0;
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+.auth-back a {
+  color: var(--fabric-accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.auth-back a:hover {
+  text-decoration: underline;
+}
+</style>

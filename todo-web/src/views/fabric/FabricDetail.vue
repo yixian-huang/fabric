@@ -86,7 +86,12 @@ import { ArrowLeft, Share, Star, StarFilled } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useI18n } from 'vue-i18n';
 import { getPublicFabricDetail } from '@/api/fabric';
-import { normalizeFabricItem, codesToOptions, formatComposition, formatI18nOptionName } from '@/utils/fabric';
+import {
+  parseFabricDetailResponse,
+  codesToOptions,
+  formatComposition,
+  formatI18nOptionName,
+} from '@/utils/fabric';
 import {
   buildFabricProductJsonLd,
   buildFabricSeoDescription,
@@ -179,10 +184,15 @@ const loadFabric = async () => {
   fabric.value = null;
   try {
     const res = await getPublicFabricDetail(referenceCode.value);
-    const data = (res as { data?: Record<string, unknown> }).data;
-    if (data && typeof data === 'object' && 'reference_code' in data) {
-      fabric.value = normalizeFabricItem(data as Record<string, unknown>);
+    const row = parseFabricDetailResponse(
+      res as Parameters<typeof parseFabricDetailResponse>[0],
+    );
+    if (!row) return;
+    fabric.value = row;
+    try {
       applySeo(fabric.value);
+    } catch (error) {
+      console.error('Failed to apply fabric detail SEO:', error);
     }
   } catch {
     fabric.value = null;

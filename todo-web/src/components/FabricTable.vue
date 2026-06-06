@@ -1,14 +1,8 @@
 <template>
-  <div>
+  <div class="fabric-table">
     <el-table
       :data="fabrics"
       style="width: 100%"
-      :header-cell-style="{
-        background: '#f5f7fa',
-        color: '#333',
-        fontWeight: 'bold',
-      }"
-      border
       @selection-change="$emit('selection-change', $event)"
     >
       <!-- 选择框 -->
@@ -52,8 +46,8 @@
         min-width="150"
       >
         <template #default="scope">
-            <el-image 
-              class="w-full h-full"
+            <el-image
+              class="fabric-table__thumb"
               preview-teleported
               :src="scope.row.thumbnail_url"
               :zoom-rate="1.2"
@@ -65,7 +59,6 @@
               :initial-index="4"
               fit="cover"
             />
-
         </template>
       </el-table-column>
       <!-- 成分与规格 -->
@@ -77,30 +70,34 @@
         <template #default="scope">
           <div class="composition-container p-2">
             <div
-              class="composition-item text-left py-1 border-b border-gray-200 last:border-b-0"
+              class="composition-item text-left py-1 border-b last:border-b-0"
+              style="border-color: var(--fabric-border)"
             >
               {{ formatComposition(scope.row.components) }}
             </div>
             <div
               v-if="scope.row.yarn_count"
-              class="composition-item text-left py-1 border-b border-gray-200"
+              class="composition-item text-left py-1 border-b"
+              style="border-color: var(--fabric-border)"
             >
               {{ scope.row.yarn_count }}
               {{ scope.row.density }}
             </div>
             <div
               v-if="scope.row.weight"
-              class="composition-item text-left py-1 border-b border-gray-200"
+              class="composition-item text-left py-1 border-b"
+              style="border-color: var(--fabric-border)"
             >
-              <span class="text-gray-600"
+              <span class="composition-item__muted"
                 >{{ scope.row.weight }} {{ scope.row.weight_unit }}
               </span>
             </div>
             <div
               v-if="scope.row.width"
-              class="composition-item text-left py-1 border-b border-gray-200"
+              class="composition-item text-left py-1 border-b"
+              style="border-color: var(--fabric-border)"
             >
-              <span class="text-gray-600">{{ scope.row.width }}</span>
+              <span class="composition-item__muted">{{ scope.row.width }}</span>
             </div>
           </div>
         </template>
@@ -112,29 +109,27 @@
         min-width="150"
       >
         <template #default="scope">
-            <el-tag
+            <span
               v-for="item in styleOptions(scope.row)"
               :key="item.code"
-              class="mr-1"
-              type="success"
-              size="small"
+              class="fabric-tag fabric-table__tag"
             >
               {{ formatI18nOption(item) }}
-            </el-tag>
-            <el-tag type="success" size="small">
+            </span>
+            <span class="fabric-tag fabric-table__tag">
               <template v-if="scope.row.fabric_type === 1">
                 {{ $t("fabric.knitted") }}
               </template>
-              <template v-if="scope.row.fabric_type === 2">
+              <template v-else-if="scope.row.fabric_type === 2">
                 {{ $t("fabric.woven") }}
               </template>
-              <template v-if="scope.row.fabric_type === 3">
+              <template v-else-if="scope.row.fabric_type === 3">
                 {{ $t("fabric.lace") }}
               </template>
-              <template v-if="scope.row.fabric_type === 4">
+              <template v-else-if="scope.row.fabric_type === 4">
                 {{ $t("fabric.velvet") }}
               </template>
-            </el-tag>
+            </span>
         </template>
       </el-table-column>
 
@@ -148,15 +143,13 @@
           <div
             v-if="processOptions(scope.row).length"
           >
-            <el-tag
+            <span
               v-for="item in processOptions(scope.row)"
               :key="item.code"
-              class="mr-1 mb-1"
-              type="success"
-              size="small"
+              class="fabric-tag fabric-table__tag"
             >
               {{ formatI18nOption(item) }}
-            </el-tag>
+            </span>
           </div>
           <div v-else>
             {{ $t("fabric.noFinishingOptions") }}
@@ -273,37 +266,63 @@ const formatComposition = formatComp;
 </script>
 
 <style scoped>
-/* 自定义表格样式 */
-:deep(.el-table) {
-  --el-table-header-bg-color: #f5f7fa;
-  --el-table-border-color: #ebeef5;
-  --el-table-row-hover-bg-color: #f5f7fa;
-}
-:deep(.el-table th) {
-  font-weight: 600;
-  color: #333;
-  height: 50px;
-}
-:deep(.el-table td) {
-  padding: 12px 0;
-}
-:deep(.el-dialog__header) {
-  margin-right: 0;
-  text-align: center;
-  font-weight: bold;
+.fabric-table :deep(.el-table) {
+  --el-table-header-text-color: var(--fabric-ink);
 }
 
-/* 成分样式 */
-.composition-container {
-  background-color: #f8f9fa;
-  border-radius: 4px;
+.fabric-table :deep(.el-table th.el-table__cell) {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  height: 48px;
+  background: var(--fabric-accent-soft) !important;
 }
+
+.fabric-table :deep(.el-table td.el-table__cell) {
+  padding: 14px 0;
+  color: var(--fabric-ink);
+}
+
+.fabric-table :deep(.el-table__inner-wrapper::before) {
+  display: none;
+}
+
+.fabric-table :deep(.el-table--border .el-table__cell) {
+  border-color: var(--fabric-border);
+}
+
+.fabric-table__thumb {
+  width: 88px;
+  height: 88px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--fabric-border);
+  margin: 0 auto;
+}
+
+.fabric-table__tag {
+  margin: 0 0.25rem 0.35rem 0;
+}
+
+.composition-container {
+  background: rgba(240, 232, 220, 0.35);
+  border-radius: 10px;
+  border: 1px solid var(--fabric-border);
+}
+
 .composition-item {
   font-weight: 500;
-  color: #4a5568;
+  color: var(--fabric-ink);
   transition: background-color 0.2s;
 }
+
+.composition-item__muted {
+  color: var(--fabric-muted);
+}
+
 .composition-item:hover {
-  background-color: #edf2f7;
+  background: rgba(255, 252, 248, 0.65);
 }
 </style> 

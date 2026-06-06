@@ -1,14 +1,17 @@
-# Fabric — Quick-Box 部署
+# Fabric — Quick-Box 部署（测试环境）
+
+**测试机:** `172.81.57.29:22` · **生产:** fabricoption.com（见 [ENVIRONMENTS.md](./ENVIRONMENTS.md)）
 
 **仓库:** https://github.com/yixian-huang/fabric.git  
-**Project ID:** `7abe3dcb-758f-4614-bf0a-f91ed6086477`  
-**主机:** `172.81.57.29`
+**Project ID:** `7abe3dcb-758f-4614-bf0a-f91ed6086477`
 
 | 环境 | 容器 | 宿主机端口 | 访问 |
 |------|------|------------|------|
 | `fabric` (API) | `fabric-api` | 18081 | http://172.81.57.29:18081/healthz |
 | `fabric-web` | `fabric-web` | 18082 | http://172.81.57.29:18082/ |
-| `fabric-table` | `fabric-table` | 18083 | http://172.81.57.29:18083/grid/ |
+| ~~`fabric-table`~~ | — | 18083 | **暂不维护**（后期可能独立仓库） |
+
+日常升级：`./scripts/qb-handoff.sh main`（读 Handoff JSON，推荐）或 `./scripts/qb-deploy.sh main`
 
 前端构建参数（镜像内 baked）：
 
@@ -32,9 +35,8 @@ curl -X POST "https://ops.zoom.ci/api/v1/deploy-hooks/7abe3dcb-758f-4614-bf0a-f9
 curl -X POST "https://ops.zoom.ci/api/v1/deploy-hooks/7abe3dcb-758f-4614-bf0a-f91ed6086477/fabric-web" \
   -H "X-API-Key: $QB_API_KEY" -H "Content-Type: application/json" -d '{"gitRef":"main"}'
 
-# Table
-curl -X POST "https://ops.zoom.ci/api/v1/deploy-hooks/7abe3dcb-758f-4614-bf0a-f91ed6086477/fabric-table" \
-  -H "X-API-Key: $QB_API_KEY" -H "Content-Type: application/json" -d '{"gitRef":"main"}'
+# Table（暂不维护，需 --with-table 或单独 hook）
+# curl -X POST ".../fabric-table" ...
 ```
 
 ## 环境 ID

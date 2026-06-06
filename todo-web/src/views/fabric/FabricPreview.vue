@@ -18,6 +18,11 @@
         </div>
       </section>
 
+      <section v-if="!isModern" class="classic-hero">
+        <h1 class="classic-hero__title">{{ siteConfig.name }}</h1>
+        <p class="classic-hero__subtitle">{{ siteConfig.description }}</p>
+      </section>
+
       <FabricSearchForm
         :initial-search-params="searchParams"
         @search="handleSearch"
@@ -222,6 +227,28 @@ onMounted(() => {
   width: 1px;
   height: 2rem;
   background: var(--fabric-border);
+}
+
+.classic-hero {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding-top: 0.5rem;
+}
+
+.classic-hero__title {
+  font-family: var(--font-display);
+  font-size: clamp(1.85rem, 4vw, 2.75rem);
+  font-weight: 600;
+  color: var(--fabric-ink);
+  margin: 0 0 0.5rem;
+}
+
+.classic-hero__subtitle {
+  font-size: 0.95rem;
+  color: var(--fabric-muted);
+  max-width: 28rem;
+  margin: 0 auto;
+  line-height: 1.6;
 }
 
 .toolbar {

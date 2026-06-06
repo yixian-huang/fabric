@@ -34,10 +34,6 @@ func hashPassword(password string) (string, error) {
 	return string(b), err
 }
 
-func checkPassword(hash, password string) bool {
-	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil
-}
-
 func (s *AuthService) Login(req LoginRequest) (*LoginData, error) {
 	username := strings.TrimSpace(req.Username)
 	password := strings.TrimSpace(req.Password)

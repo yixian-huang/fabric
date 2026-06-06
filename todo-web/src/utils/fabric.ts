@@ -1,4 +1,4 @@
-import { useI18n } from 'vue-i18n';
+import i18n from '@/i18n';
 
 export type FabricOption = { code: string; name?: string };
 
@@ -140,18 +140,26 @@ export function parseSharedFavoritesResponse(res: {
  * @returns 格式化后的国际化文本
  */
 export function formatI18nOptionName(optionCode: string, optionName?: string): string {
-  const { t } = useI18n();
   const optionNameKey = `fabric.${optionCode}`;
-  
-  // 使用t函数尝试翻译，同时提供兜底
-  const translated = t(optionNameKey);
-  
-  // 如果翻译结果与键名相同，说明没有找到翻译
+  const translated = i18n.global.t(optionNameKey);
+
   if (translated === optionNameKey && optionName) {
     return optionName;
   }
-  
+
   return translated || optionName || optionCode;
+}
+
+/** 解析公开详情 envelope：兼容 Go `{ data: Fabric }` 与旧 Django 直出对象 */
+export function parseFabricDetailResponse(res: {
+  data?: Record<string, unknown>;
+  reference_code?: string;
+}) {
+  const data = res?.data ?? res;
+  if (data && typeof data === 'object' && 'reference_code' in data) {
+    return normalizeFabricItem(data as Record<string, unknown>);
+  }
+  return null;
 }
 
 /**
