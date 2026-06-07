@@ -34,6 +34,13 @@ type Config struct {
 	MinioSecretKey string
 	MinioBucket    string
 	MinioSecure    bool
+
+	InquiryToEmail string
+	SMTPHost       string
+	SMTPPort       int
+	SMTPUser       string
+	SMTPPassword   string
+	SMTPFrom       string
 }
 
 func Load() Config {
@@ -66,6 +73,13 @@ func Load() Config {
 		MinioSecretKey: getEnv("MINIO_SECRET_KEY", "minioadmin"),
 		MinioBucket:    getEnv("MINIO_BUCKET_NAME", "fabric"),
 		MinioSecure:    getEnvBool("MINIO_SECURE", false),
+
+		InquiryToEmail: getEnv("INQUIRY_TO_EMAIL", ""),
+		SMTPHost:       getEnv("SMTP_HOST", ""),
+		SMTPPort:       getEnvInt("SMTP_PORT", 587),
+		SMTPUser:       getEnv("SMTP_USER", ""),
+		SMTPPassword:   getEnv("SMTP_PASSWORD", ""),
+		SMTPFrom:       getEnv("SMTP_FROM", ""),
 	}
 }
 

@@ -16,11 +16,12 @@ import (
 )
 
 type Handler struct {
-	svc *Service
+	svc     *Service
+	inquiry *InquiryService
 }
 
-func NewHandler(svc *Service) *Handler {
-	return &Handler{svc: svc}
+func NewHandler(svc *Service, inquiry *InquiryService) *Handler {
+	return &Handler{svc: svc, inquiry: inquiry}
 }
 
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
@@ -148,6 +149,29 @@ func (h *Handler) RecordVisit(w http.ResponseWriter, r *http.Request) {
 		msg = "访客记录已保存"
 	}
 	response.JSON(w, http.StatusOK, 200, msg, nil)
+}
+
+func (h *Handler) SubmitInquiry(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	var req InquiryRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.JSON(w, http.StatusBadRequest, 40001, "invalid request body", nil)
+		return
+	}
+	if err := h.inquiry.Submit(r.Context(), req); err != nil {
+		switch {
+		case errors.Is(err, ErrInquiryInvalidInput):
+			response.JSON(w, http.StatusBadRequest, 40002, "请填写有效的邮箱和留言", nil)
+		case errors.Is(err, ErrInquiryNotConfigured):
+			response.JSON(w, http.StatusServiceUnavailable, 50301, "询价服务暂未配置", nil)
+		case errors.Is(err, ErrFabricNotFound):
+			response.JSON(w, http.StatusNotFound, 40404, "面料不存在", nil)
+		default:
+			response.JSON(w, http.StatusInternalServerError, 50001, "发送失败，请稍后重试", nil)
+		}
+		return
+	}
+	response.JSON(w, http.StatusOK, 200, "询价已发送，我们会尽快回复", nil)
 }
 
 func (h *Handler) ListVendors(w http.ResponseWriter, r *http.Request) {

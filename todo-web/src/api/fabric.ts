@@ -163,4 +163,16 @@ export function getVisitorStats() {
     url: '/fabrics/visitor_stats',
     method: 'get'
   });
+}
+
+export function submitFabricInquiry(data: {
+  reference_code: string;
+  email: string;
+  message: string;
+}) {
+  return request({
+    url: '/fabrics/inquiry',
+    method: 'post',
+    data,
+  });
 } 

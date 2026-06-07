@@ -1,7 +1,10 @@
 <template>
-  <div id="app">
+  <div id="app" class="app-shell">
     <AppHeader v-if="!isAdminRoute" />
-    <router-view />
+    <main class="app-main">
+      <router-view />
+    </main>
+    <AppFooter v-if="!isAdminRoute" />
     
     <!-- 全局打印预览弹窗 -->
     <PrintPreviewDialog
@@ -15,6 +18,7 @@
 
 <script setup lang="ts">
 import AppHeader from '@/components/AppHeader.vue'
+import AppFooter from '@/components/AppFooter.vue'
 import PrintPreviewDialog from '@/components/PrintPreviewDialog.vue'
 import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
@@ -38,5 +42,15 @@ onMounted(async () => {
 </script>
 
 <style>
-/* ... 现有样式 ... */
+#app.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
 </style> 

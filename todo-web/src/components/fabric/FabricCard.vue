@@ -41,6 +41,16 @@
         </el-icon>
       </button>
 
+      <button
+        type="button"
+        class="fabric-card__print"
+        :class="{ 'fabric-card__print--solo': !showFavorite }"
+        :title="t('fabric.printPreview')"
+        @click.stop="emit('print', fabric)"
+      >
+        <el-icon><Printer /></el-icon>
+      </button>
+
       <span class="fabric-card__view-hint">
         {{ t('fabric.viewDetails') }}
         <el-icon><ArrowRight /></el-icon>
@@ -62,7 +72,7 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import { ArrowRight, Loading, Star, StarFilled } from '@element-plus/icons-vue';
+import { ArrowRight, Loading, Printer, Star, StarFilled } from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
 import {
   codesToOptions,
@@ -82,6 +92,7 @@ const emit = defineEmits<{
   open: [Record<string, any>];
   'toggle-select': [Record<string, any>];
   'toggle-favorite': [Record<string, any>];
+  print: [Record<string, any>];
 }>();
 
 const { t } = useI18n();
@@ -250,6 +261,40 @@ const imageAlt = computed(
   color: #c45c5c;
   background: rgba(255, 240, 240, 0.95);
   border-color: rgba(196, 92, 92, 0.3);
+}
+
+.fabric-card__print {
+  position: absolute;
+  top: 0.75rem;
+  right: 3.75rem;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  background: rgba(255, 252, 248, 0.88);
+  backdrop-filter: blur(8px);
+  color: var(--fabric-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  opacity: 0;
+}
+
+.fabric-card:hover .fabric-card__print {
+  opacity: 1;
+}
+
+.fabric-card__print:hover {
+  transform: scale(1.08);
+  color: var(--fabric-accent);
+  border-color: rgba(154, 123, 79, 0.35);
+}
+
+.fabric-card__print--solo {
+  right: 0.75rem;
 }
 
 .fabric-card__view-hint {

@@ -28,6 +28,21 @@ export default {
     notFound: 'Fabric not found',
     share: 'Share',
     linkCopied: 'Link copied',
+    shareCopiedRich: 'Fabric details copied',
+    loadMore: 'Scroll down for more',
+    loadingMore: 'Loading…',
+    allLoaded: 'All fabrics loaded',
+    inquiry: 'Inquiry',
+    inquiryTitle: 'Fabric Inquiry',
+    inquiryEmail: 'Your email',
+    inquiryEmailPlaceholder: 'Enter your contact email',
+    inquiryMessage: 'Message',
+    inquiryMessagePlaceholder: 'Describe your requirements (quantity, use, lead time, etc.)',
+    inquirySubmit: 'Send inquiry',
+    inquirySuccess: 'Inquiry sent. We will reply soon.',
+    inquiryFailed: 'Failed to send. Please try again later.',
+    inquiryEmailRequired: 'Please enter your email',
+    inquiryMessageRequired: 'Please enter a message',
     viewDetails: 'View details',
     previewEyebrow: 'Silk & Textile Collection',
     searchResults: 'Results',
@@ -124,6 +139,7 @@ export default {
     
     
     // FabricSearchForm.vue
+    componentSearch: 'Component Search',
     componentName: 'Component Name',
     selectComponentOption: 'Select Component',
     percentageRange: 'Percentage Range',
@@ -302,7 +318,9 @@ export default {
     cancel: 'Cancel',
     copy: 'Copy',
     copySuccess: 'Copy success',
-    backToHome: 'Back To Home'
+    backToHome: 'Back To Home',
+    footerCopyright: '© {year} {name}. All rights reserved.',
+    footerTagline: 'Professional silk fabric showcase platform',
   },
   favorite: {
     favorite: 'Favorite',

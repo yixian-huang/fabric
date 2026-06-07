@@ -47,38 +47,59 @@
         </el-button>
       </div>
 
-      <div v-loading="loading" class="content-panel fabric-surface">
-        <FabricCardGrid
+      <div
+        v-loading="loading"
+        class="content-panel fabric-surface"
+        :class="{ 'content-panel--card-scroll': isModern }"
+      >
+        <div
           v-if="isModern"
-          :fabrics="fabricList"
-          @selection-change="handleSelectionChange"
-        />
-        <FabricTable
-          v-else
-          :fabrics="fabricList"
-          @selection-change="handleSelectionChange"
-        />
-
-        <div class="content-panel__footer">
-          <el-pagination
-            :current-page="currentPage"
-            :page-size="pageSize"
-            :page-sizes="[10, 20, 50, 100]"
-            layout="total, sizes, prev, pager, next, jumper"
-            :total="total"
-            @size-change="handleSizeChange"
-            @current-change="handleCurrentChange"
-            @update:current-page="currentPage = $event"
-            @update:page-size="pageSize = $event"
+          ref="scrollContainer"
+          class="content-panel__scroll"
+          @scroll="handleCardScroll"
+        >
+          <FabricCardGrid
+            :fabrics="fabricList"
+            selectable
+            show-favorite
+            @selection-change="handleSelectionChange"
+            @print="handleCardPrint"
           />
+          <div v-if="fabricList.length" class="content-panel__load-more">
+            <p v-if="loadingMore" class="load-more__hint">{{ t('fabric.loadingMore') }}</p>
+            <p v-else-if="!hasMore" class="load-more__hint load-more__hint--done">
+              {{ t('fabric.allLoaded') }}
+            </p>
+            <p v-else class="load-more__hint">{{ t('fabric.loadMore') }}</p>
+          </div>
         </div>
+
+        <template v-else>
+          <FabricTable
+            :fabrics="fabricList"
+            @selection-change="handleSelectionChange"
+          />
+          <div class="content-panel__footer">
+            <el-pagination
+              :current-page="currentPage"
+              :page-size="pageSize"
+              :page-sizes="[10, 20, 50, 100]"
+              layout="total, sizes, prev, pager, next, jumper"
+              :total="total"
+              @size-change="handleSizeChange"
+              @current-change="handleCurrentChange"
+              @update:current-page="currentPage = $event"
+              @update:page-size="pageSize = $event"
+            />
+          </div>
+        </template>
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Printer } from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
@@ -96,6 +117,7 @@ import { usePrintStore } from '@/stores/print';
 const { t } = useI18n();
 const printStore = usePrintStore();
 const { theme, isModern, setTheme } = useFabricTheme();
+const scrollContainer = ref<HTMLElement | null>(null);
 
 const {
   currentPage,
@@ -103,15 +125,18 @@ const {
   total,
   allCount,
   loading,
+  loadingMore,
+  hasMore,
   fabricList,
   selectedFabrics,
   searchParams,
   fetchFabricList,
+  loadMoreFabrics,
   handleSearch,
   handleSizeChange,
   handleCurrentChange,
   handleSelectionChange,
-} = useFabricList((params) => getPublicFabricList(params));
+} = useFabricList((params) => getPublicFabricList(params), 20);
 
 usePageSeo({
   title: t('fabric.previewTitle'),
@@ -135,8 +160,21 @@ const handleShowPrintPreview = () => {
   printStore.openPrintPreview(selectedFabrics.value, true);
 };
 
+const handleCardPrint = (fabric: Record<string, unknown>) => {
+  printStore.openPrintPreview([fabric], false);
+};
+
+const handleCardScroll = () => {
+  const el = scrollContainer.value;
+  if (!el || !isModern.value) return;
+  const threshold = 120;
+  if (el.scrollTop + el.clientHeight >= el.scrollHeight - threshold) {
+    loadMoreFabrics();
+  }
+};
+
 onMounted(() => {
-  fetchFabricList();
+  fetchFabricList(false);
   recordVisit().catch((error) => {
     console.error('访客记录失败:', error);
   });
@@ -293,6 +331,36 @@ onMounted(() => {
 .content-panel {
   border-radius: 20px;
   overflow: hidden;
+}
+
+.content-panel--card-scroll {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 22rem);
+}
+
+.content-panel__scroll {
+  flex: 1;
+  overflow-y: auto;
+  min-height: calc(100vh - 22rem);
+  max-height: calc(100vh - 14rem);
+}
+
+.content-panel__load-more {
+  padding: 1rem 1.5rem 1.5rem;
+  text-align: center;
+  border-top: 1px solid var(--fabric-border);
+  background: rgba(255, 252, 248, 0.6);
+}
+
+.load-more__hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--fabric-muted);
+}
+
+.load-more__hint--done {
+  opacity: 0.7;
 }
 
 .content-panel__footer {

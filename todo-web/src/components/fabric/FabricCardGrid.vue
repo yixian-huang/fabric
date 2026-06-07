@@ -12,6 +12,7 @@
         @open="handleOpen"
         @toggle-select="handleToggleSelect"
         @toggle-favorite="handleToggleFavorite"
+        @print="(fabric) => emit('print', fabric)"
       />
     </template>
     <div v-else class="fabric-empty">
@@ -42,6 +43,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'selection-change': [Record<string, unknown>[]];
   'open-detail': [Record<string, unknown>];
+  print: [Record<string, unknown>];
 }>();
 
 const router = useRouter();

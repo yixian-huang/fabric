@@ -30,7 +30,7 @@ func main() {
 	defer container.Close()
 
 	baseBinder := baseModule.NewBinder(container.PG, container.JWT, container.Storage)
-	fabricsBinder := fabricsModule.NewBinder(container.PG, container.Storage)
+	fabricsBinder := fabricsModule.NewBinder(container.PG, container.Storage, cfg, logger)
 	setupBinder := setupModule.NewBinder(container.Setup)
 
 	r := router.New(container.JWT, baseBinder, fabricsBinder, setupBinder)

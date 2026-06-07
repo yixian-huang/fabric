@@ -3,6 +3,49 @@
     class="fabric-search fabric-search-panel"
     :class="{ 'fabric-search--expanded': expanded }"
   >
+    <!-- 成分搜索：置顶展示 -->
+    <div class="fabric-search__composition">
+      <span class="fabric-search__composition-label">{{ t('fabric.componentSearch') }}</span>
+      <div class="fabric-search__composition-fields">
+        <el-select
+          v-model="searchForm.component_code"
+          :placeholder="t('fabric.selectComponentOption')"
+          clearable
+          class="fabric-search__control fabric-search__composition-select"
+          @change="handleSearch"
+        >
+          <el-option
+            v-for="option in componentOptions"
+            :key="option.option_code"
+            :label="formatI18nOption(option)"
+            :value="option.option_code"
+          />
+        </el-select>
+        <div class="fabric-search__range fabric-search__composition-range">
+          <el-input-number
+            v-model="searchForm.component_percentage_min"
+            :min="0"
+            :max="100"
+            :precision="0"
+            :placeholder="t('fabric.min')"
+            controls-position="right"
+            class="fabric-search__control"
+          />
+          <span class="fabric-search__range-sep">—</span>
+          <el-input-number
+            v-model="searchForm.component_percentage_max"
+            :min="0"
+            :max="999"
+            :precision="0"
+            :placeholder="t('fabric.max')"
+            controls-position="right"
+            class="fabric-search__control"
+          />
+          <span class="fabric-search__range-unit">%</span>
+        </div>
+      </div>
+    </div>
+
     <!-- 简约默认栏：参考号 + 面料编号 + 操作 -->
     <div class="fabric-search__bar">
       <div class="fabric-search__quick">
@@ -59,49 +102,6 @@
     <Transition name="fabric-search-expand">
       <div v-show="expanded" class="fabric-search__advanced">
         <div class="fabric-search__grid">
-          <div class="fabric-search__field">
-            <label class="fabric-search__label">{{ t('fabric.componentName') }}</label>
-            <el-select
-              v-model="searchForm.component_code"
-              :placeholder="t('fabric.selectComponentOption')"
-              clearable
-              class="fabric-search__control"
-            >
-              <el-option
-                v-for="option in componentOptions"
-                :key="option.option_code"
-                :label="formatI18nOption(option)"
-                :value="option.option_code"
-              />
-            </el-select>
-          </div>
-
-          <div class="fabric-search__field fabric-search__field--wide">
-            <label class="fabric-search__label">{{ t('fabric.percentageRange') }}</label>
-            <div class="fabric-search__range">
-              <el-input-number
-                v-model="searchForm.component_percentage_min"
-                :min="0"
-                :max="100"
-                :precision="0"
-                :placeholder="t('fabric.min')"
-                controls-position="right"
-                class="fabric-search__control"
-              />
-              <span class="fabric-search__range-sep">—</span>
-              <el-input-number
-                v-model="searchForm.component_percentage_max"
-                :min="0"
-                :max="999"
-                :precision="0"
-                :placeholder="t('fabric.max')"
-                controls-position="right"
-                class="fabric-search__control"
-              />
-              <span class="fabric-search__range-unit">%</span>
-            </div>
-          </div>
-
           <div class="fabric-search__field fabric-search__field--wide">
             <label class="fabric-search__label">{{ t('fabric.weightRange') }}</label>
             <div class="fabric-search__range">
@@ -415,6 +415,52 @@ onMounted(() => {
   margin-bottom: 1.25rem;
   border-radius: 16px;
   overflow: hidden;
+}
+
+.fabric-search__composition {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--fabric-border);
+  background: rgba(154, 123, 79, 0.04);
+}
+
+@media (min-width: 768px) {
+  .fabric-search__composition {
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.85rem 1.25rem;
+  }
+}
+
+.fabric-search__composition-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fabric-accent);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.fabric-search__composition-fields {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.fabric-search__composition-select {
+  flex: 1;
+  min-width: 160px;
+}
+
+.fabric-search__composition-range {
+  flex: 1.2;
+  min-width: 200px;
 }
 
 .fabric-search__bar {

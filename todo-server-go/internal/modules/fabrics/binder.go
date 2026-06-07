@@ -1,11 +1,13 @@
 package fabrics
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"todo-server-go/internal/config"
 	"todo-server-go/internal/infra/storage"
 )
 
@@ -13,11 +15,12 @@ type Binder struct {
 	handler *Handler
 }
 
-func NewBinder(pool *pgxpool.Pool, blob storage.Store) *Binder {
+func NewBinder(pool *pgxpool.Pool, blob storage.Store, cfg config.Config, logger *slog.Logger) *Binder {
 	pgStore := newPGStore(pool, blob)
 	vendorRepo := newPGVendorRepo(pool)
 	svc := NewService(pgStore, vendorRepo)
-	return &Binder{handler: NewHandler(svc)}
+	inquiry := NewInquiryService(cfg, svc, logger)
+	return &Binder{handler: NewHandler(svc, inquiry)}
 }
 
 func (b *Binder) Bind(r chi.Router, auth func(http.Handler) http.Handler) {
@@ -33,6 +36,7 @@ func (b *Binder) Bind(r chi.Router, auth func(http.Handler) http.Handler) {
 		cr.With(auth).Post("/toggle_favorite", b.handler.ToggleFavorite)
 		cr.With(auth).Get("/visitor_stats", b.handler.VisitorStats)
 		cr.Post("/record_visit", b.handler.RecordVisit)
+		cr.Post("/inquiry", b.handler.SubmitInquiry)
 
 		cr.With(auth).Post("/create_option", b.handler.CreateOption)
 		cr.With(auth).Put("/update_option/{option_id}", b.handler.UpdateOption)

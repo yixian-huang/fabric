@@ -54,6 +54,10 @@
             </section>
 
             <div class="detail-actions">
+              <el-button type="primary" @click="inquiryVisible = true">
+                <el-icon class="mr-1"><Message /></el-icon>
+                {{ t('fabric.inquiry') }}
+              </el-button>
               <el-button
                 :type="fabric.is_favorited ? 'danger' : 'default'"
                 @click="handleToggleFavorite"
@@ -73,6 +77,11 @@
           </div>
         </div>
       </article>
+
+      <FabricInquiryDialog
+        v-model="inquiryVisible"
+        :reference-code="referenceCode"
+      />
     </div>
 
     <el-empty v-else-if="!loading" :description="t('fabric.notFound')" />
@@ -82,9 +91,10 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { ArrowLeft, Share, Star, StarFilled } from '@element-plus/icons-vue';
+import { ArrowLeft, Message, Share, Star, StarFilled } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useI18n } from 'vue-i18n';
+import FabricInquiryDialog from '@/components/fabric/FabricInquiryDialog.vue';
 import { getPublicFabricDetail } from '@/api/fabric';
 import {
   parseFabricDetailResponse,
@@ -99,6 +109,7 @@ import {
 } from '@/utils/fabricSeo';
 import { usePageSeo } from '@/composables/usePageSeo';
 import { fabricDetailPath, fabricDetailUrl } from '@/config/site';
+import { shareFabricDetail, buildFabricShareText } from '@/utils/fabricShare';
 import { useUserStore } from '@/stores/user';
 import { useFavoriteStore } from '@/stores/favorite';
 
@@ -110,6 +121,7 @@ const favoriteStore = useFavoriteStore();
 
 const loading = ref(true);
 const favoriteLoading = ref(false);
+const inquiryVisible = ref(false);
 const fabric = ref<Record<string, any> | null>(null);
 
 const referenceCode = computed(() => String(route.params.referenceCode || ''));
@@ -228,16 +240,18 @@ const handleToggleFavorite = async () => {
 };
 
 const handleShare = async () => {
-  const url = fabricDetailUrl(referenceCode.value);
+  if (!fabric.value) return;
   try {
-    if (navigator.share) {
-      await navigator.share({ title: seoTitle.value, url });
-      return;
+    const result = await shareFabricDetail(fabric.value, seoTitle.value, t);
+    if (result === 'copied') {
+      ElMessage.success(t('fabric.shareCopiedRich'));
+    } else if (result === 'shown') {
+      ElMessage.info(buildFabricShareText(fabric.value, t));
     }
-    await navigator.clipboard.writeText(url);
-    ElMessage.success(t('fabric.linkCopied'));
-  } catch {
-    ElMessage.info(url);
+  } catch (err) {
+    if ((err as DOMException)?.name !== 'AbortError') {
+      ElMessage.info(fabricDetailUrl(referenceCode.value));
+    }
   }
 };
 
