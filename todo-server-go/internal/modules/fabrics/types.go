@@ -21,8 +21,11 @@ type Fabric struct {
 	Width               string      `json:"width,omitempty"`
 	YarnCount           string      `json:"yarn_count,omitempty"`
 	Density             string      `json:"density,omitempty"`
-	Components          []Component `json:"components"`
-	CreatedAt           time.Time   `json:"created_at"`
+	Components          []Component   `json:"components"`
+	ExtraImages         []FabricImage `json:"extra_images,omitempty"`
+	VendorID            *string       `json:"vendor_id,omitempty"`
+	VendorName          string        `json:"vendor_name,omitempty"`
+	CreatedAt           time.Time     `json:"created_at"`
 	IsFavorited         bool        `json:"is_favorited"`
 }
 
@@ -39,12 +42,19 @@ type Component struct {
 	OptionCode string  `json:"option_code"`
 }
 
+type FabricImage struct {
+	FileID string `json:"file_id"`
+	URL    string `json:"url"`
+	SortOrder int `json:"sort_order"`
+}
+
 type Option struct {
 	OptionID      string `json:"option_id"`
 	CategoryCode  string `json:"category_code"`
 	CategoryLabel string `json:"category_display"`
 	OptionCode    string `json:"option_code"`
 	OptionName    string `json:"option_name"`
+	OptionNameZh  string `json:"option_name_zh"`
 	SortOrder     int    `json:"sort_order"`
 }
 

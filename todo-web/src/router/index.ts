@@ -64,6 +64,18 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/admin/suppliers/SupplierList.vue'),
         meta: { adminTitleKey: 'admin.suppliers' },
       },
+      {
+        path: 'users',
+        name: 'AdminUsers',
+        component: () => import('@/views/admin/users/UserList.vue'),
+        meta: { adminTitleKey: 'admin.users' },
+      },
+      {
+        path: 'settings',
+        name: 'AdminSettings',
+        component: () => import('@/views/admin/settings/SettingsPage.vue'),
+        meta: { adminTitleKey: 'admin.settings' },
+      },
     ],
   },
   {
@@ -171,6 +183,21 @@ router.beforeEach(async (to, _from, next) => {
   } else {
     next();
   }
+});
+
+router.afterEach((to) => {
+  if (to.meta.requiresAuth === true) return;
+  if (to.path.startsWith('/admin')) return;
+  const page =
+    to.name === 'FabricDetail'
+      ? `fabric_detail:${to.params.referenceCode}`
+      : String(to.name || to.path);
+  import('@/api/fabric').then(({ recordVisit }) => {
+    recordVisit({
+      page,
+      url: to.fullPath,
+    }).catch(() => undefined);
+  });
 });
 
 export default router;

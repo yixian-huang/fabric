@@ -132,23 +132,7 @@ func (h *Handler) VisitorStats(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (h *Handler) RecordVisit(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Page string `json:"page"`
-	}
-	_ = json.NewDecoder(r.Body).Decode(&req)
-	ip := clientIP(r)
-	userAgent := r.UserAgent()
-	page := strings.TrimSpace(req.Page)
-	if page == "" {
-		page = "fabric_preview"
-	}
-
-	created := h.svc.RecordVisit(ip, userAgent, page, time.Now().UTC())
-	msg := "访客已记录在案"
-	if created {
-		msg = "访客记录已保存"
-	}
-	response.JSON(w, http.StatusOK, 200, msg, nil)
+	h.RecordVisitEnhanced(w, r)
 }
 
 func (h *Handler) SubmitInquiry(w http.ResponseWriter, r *http.Request) {
@@ -332,15 +316,16 @@ func (h *Handler) CreateOption(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdateOption(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var req struct {
-		OptionName *string `json:"option_name"`
-		SortOrder  *int    `json:"sort_order"`
+		OptionName   *string `json:"option_name"`
+		OptionNameZh *string `json:"option_name_zh"`
+		SortOrder    *int    `json:"sort_order"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.JSON(w, http.StatusBadRequest, 40001, "invalid request body", nil)
 		return
 	}
 	optionID := strings.TrimSpace(chi.URLParam(r, "option_id"))
-	o, err := h.svc.UpdateOption(optionID, req.OptionName, req.SortOrder)
+	o, err := h.svc.UpdateOption(optionID, req.OptionName, req.OptionNameZh, req.SortOrder)
 	if err != nil {
 		if errors.Is(err, ErrOptionNotFound) {
 			response.JSON(w, http.StatusNotFound, 40404, "选项不存在", nil)
@@ -413,20 +398,22 @@ func (h *Handler) SharedFavorites(w http.ResponseWriter, r *http.Request) {
 }
 
 type fabricPayload struct {
-	Code          string      `json:"code"`
-	MerchantCode  string      `json:"merchant_code"`
-	ReferenceCode string      `json:"reference_code"`
-	ImageFileID   *string     `json:"image_file_id"`
-	Weight        *float64    `json:"weight"`
-	WeightUnit    string      `json:"weight_unit"`
-	FabricType    flexInt     `json:"fabric_type"`
-	StyleCodes    []string    `json:"style_codes"`
-	ProcessCodes  []string    `json:"process_codes"`
-	Remark        string      `json:"remark"`
-	Width         string      `json:"width"`
-	YarnCount     string      `json:"yarn_count"`
-	Density       string      `json:"density"`
-	Components    []Component `json:"components"`
+	Code           string      `json:"code"`
+	MerchantCode   string      `json:"merchant_code"`
+	ReferenceCode  string      `json:"reference_code"`
+	ImageFileID    *string     `json:"image_file_id"`
+	ExtraImageIDs  []string    `json:"extra_image_ids"`
+	VendorID       *string     `json:"vendor_id"`
+	Weight         *float64    `json:"weight"`
+	WeightUnit     string      `json:"weight_unit"`
+	FabricType     flexInt     `json:"fabric_type"`
+	StyleCodes     []string    `json:"style_codes"`
+	ProcessCodes   []string    `json:"process_codes"`
+	Remark         string      `json:"remark"`
+	Width          string      `json:"width"`
+	YarnCount      string      `json:"yarn_count"`
+	Density        string      `json:"density"`
+	Components     []Component `json:"components"`
 }
 
 func (p fabricPayload) toInput() FabricInput {
@@ -436,6 +423,8 @@ func (p fabricPayload) toInput() FabricInput {
 		MerchantCode:  p.MerchantCode,
 		ReferenceCode: p.ReferenceCode,
 		ImageFileID:   normalizeImageFileID(p.ImageFileID),
+		ExtraImageIDs: p.ExtraImageIDs,
+		VendorID:      p.VendorID,
 		Weight:        p.Weight,
 		WeightUnit:    p.WeightUnit,
 		FabricType:    ft,

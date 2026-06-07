@@ -31,6 +31,7 @@
         <el-table-column prop="category_display" :label="t('fabric.categoryCode')" min-width="120" />
         <el-table-column prop="option_code" :label="t('fabric.optionCode')" min-width="120" />
         <el-table-column prop="option_name" :label="t('fabric.optionName')" min-width="150" />
+        <el-table-column prop="option_name_zh" :label="t('fabric.optionNameZh')" min-width="120" />
         <el-table-column prop="sort_order" :label="t('fabric.sortOrder')" min-width="80" />
         <el-table-column :label="t('fabric.operation')" fixed="right" width="160">
           <template #default="scope">
@@ -65,6 +66,9 @@
         </el-form-item>
         <el-form-item :label="t('fabric.optionName')" prop="option_name">
           <el-input v-model="optionForm.option_name" />
+        </el-form-item>
+        <el-form-item :label="t('fabric.optionNameZh')">
+          <el-input v-model="optionForm.option_name_zh" :placeholder="t('fabric.optionNameZh')" />
         </el-form-item>
         <el-form-item :label="t('fabric.sortOrder')" prop="sort_order">
           <el-input-number v-model="optionForm.sort_order" :min="0" :max="999" class="w-full" />
@@ -106,6 +110,7 @@ const currentOptionId = ref('');
 const optionForm = reactive({
   category_code: '',
   option_name: '',
+  option_name_zh: '',
   sort_order: 0,
 });
 
@@ -134,6 +139,7 @@ const showAddOptionForm = () => {
   currentOptionId.value = '';
   optionForm.category_code = filterCategory.value || OPTION_CATEGORY.component;
   optionForm.option_name = '';
+  optionForm.option_name_zh = '';
   optionForm.sort_order = 0;
   formDialogVisible.value = true;
 };
@@ -143,6 +149,7 @@ const handleEdit = (row: Record<string, unknown>) => {
   currentOptionId.value = row.option_id as string;
   optionForm.category_code = row.category_code as string;
   optionForm.option_name = row.option_name as string;
+  optionForm.option_name_zh = (row.option_name_zh as string) || '';
   optionForm.sort_order = row.sort_order as number;
   formDialogVisible.value = true;
 };
@@ -174,6 +181,7 @@ const submitOptionForm = async () => {
     if (isEdit.value) {
       const res = await updateOption(currentOptionId.value, {
         option_name: optionForm.option_name,
+        option_name_zh: optionForm.option_name_zh,
         sort_order: optionForm.sort_order,
       });
       if (res.code === 200) {

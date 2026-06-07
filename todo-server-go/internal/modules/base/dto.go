@@ -31,14 +31,16 @@ type ResendVerificationRequest struct {
 }
 
 type UserDetail struct {
-	UserID        string    `json:"user_id"`
-	Username      string    `json:"username"`
-	Email         string    `json:"email"`
-	Nickname      string    `json:"nickname"`
-	Status        string    `json:"status"`
-	EmailVerified bool      `json:"email_verified"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	UserID        string     `json:"user_id"`
+	Username      string     `json:"username"`
+	Email         string     `json:"email"`
+	Nickname      string     `json:"nickname"`
+	Status        string     `json:"status"`
+	EmailVerified bool       `json:"email_verified"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
+	LastVisitedAt *time.Time `json:"last_visited_at,omitempty"`
+	FavoriteCount int        `json:"favorite_count,omitempty"`
 }
 
 type UserListResponse struct {

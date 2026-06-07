@@ -17,6 +17,7 @@ var ErrOptionNotFound = errors.New("option not found")
 type OptionInput struct {
 	CategoryCode string `json:"category_code"`
 	OptionName   string `json:"option_name"`
+	OptionNameZh string `json:"option_name_zh"`
 	SortOrder    int    `json:"sort_order"`
 }
 
@@ -26,6 +27,8 @@ type optionInputPayload struct {
 	SortOrder    int    `json:"sort_order"`
 	CategoryCodePascal string `json:"CategoryCode"`
 	OptionNamePascal   string `json:"OptionName"`
+	OptionNameZh       string `json:"option_name_zh"`
+	OptionNameZhPascal string `json:"OptionNameZh"`
 	SortOrderPascal    int    `json:"SortOrder"`
 }
 
@@ -38,6 +41,10 @@ func (p optionInputPayload) normalize() OptionInput {
 	if name == "" {
 		name = strings.TrimSpace(p.OptionNamePascal)
 	}
+	nameZh := strings.TrimSpace(p.OptionNameZh)
+	if nameZh == "" {
+		nameZh = strings.TrimSpace(p.OptionNameZhPascal)
+	}
 	sort := p.SortOrder
 	if sort == 0 && p.SortOrderPascal != 0 {
 		sort = p.SortOrderPascal
@@ -45,6 +52,7 @@ func (p optionInputPayload) normalize() OptionInput {
 	return OptionInput{
 		CategoryCode: normalizeOptionCategoryCode(cat),
 		OptionName:   name,
+		OptionNameZh: nameZh,
 		SortOrder:    sort,
 	}
 }
@@ -78,11 +86,11 @@ func (s *pgStore) CreateOption(ctx context.Context, in OptionInput) (Option, err
 	optionID := uuid.NewString()
 	var o Option
 	err = s.pool.QueryRow(ctx, `
-		INSERT INTO options (option_id, category_code, option_code, option_name, sort_order)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING option_id::text, category_code, option_code, option_name, sort_order`,
-		optionID, category, optionCode, name, in.SortOrder).
-		Scan(&o.OptionID, &o.CategoryCode, &o.OptionCode, &o.OptionName, &o.SortOrder)
+		INSERT INTO options (option_id, category_code, option_code, option_name, option_name_zh, sort_order)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING option_id::text, category_code, option_code, option_name, option_name_zh, sort_order`,
+		optionID, category, optionCode, name, strings.TrimSpace(in.OptionNameZh), in.SortOrder).
+		Scan(&o.OptionID, &o.CategoryCode, &o.OptionCode, &o.OptionName, &o.OptionNameZh, &o.SortOrder)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
@@ -97,12 +105,12 @@ func (s *pgStore) CreateOption(ctx context.Context, in OptionInput) (Option, err
 	return o, nil
 }
 
-func (s *pgStore) UpdateOption(ctx context.Context, optionID string, name *string, sortOrder *int) (Option, error) {
+func (s *pgStore) UpdateOption(ctx context.Context, optionID string, name *string, nameZh *string, sortOrder *int) (Option, error) {
 	var o Option
 	err := s.pool.QueryRow(ctx, `
-		SELECT option_id::text, category_code, option_code, option_name, sort_order
+		SELECT option_id::text, category_code, option_code, option_name, option_name_zh, sort_order
 		FROM options WHERE option_id = $1`, optionID).
-		Scan(&o.OptionID, &o.CategoryCode, &o.OptionCode, &o.OptionName, &o.SortOrder)
+		Scan(&o.OptionID, &o.CategoryCode, &o.OptionCode, &o.OptionName, &o.OptionNameZh, &o.SortOrder)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Option{}, ErrOptionNotFound
 	}
@@ -112,15 +120,18 @@ func (s *pgStore) UpdateOption(ctx context.Context, optionID string, name *strin
 	if name != nil {
 		o.OptionName = strings.TrimSpace(*name)
 	}
+	if nameZh != nil {
+		o.OptionNameZh = strings.TrimSpace(*nameZh)
+	}
 	if sortOrder != nil {
 		o.SortOrder = *sortOrder
 	}
 	err = s.pool.QueryRow(ctx, `
-		UPDATE options SET option_name = $2, sort_order = $3, updated_at = NOW()
+		UPDATE options SET option_name = $2, option_name_zh = $3, sort_order = $4, updated_at = NOW()
 		WHERE option_id = $1
-		RETURNING option_id::text, category_code, option_code, option_name, sort_order`,
-		optionID, o.OptionName, o.SortOrder).
-		Scan(&o.OptionID, &o.CategoryCode, &o.OptionCode, &o.OptionName, &o.SortOrder)
+		RETURNING option_id::text, category_code, option_code, option_name, option_name_zh, sort_order`,
+		optionID, o.OptionName, o.OptionNameZh, o.SortOrder).
+		Scan(&o.OptionID, &o.CategoryCode, &o.OptionCode, &o.OptionName, &o.OptionNameZh, &o.SortOrder)
 	if err != nil {
 		return Option{}, err
 	}

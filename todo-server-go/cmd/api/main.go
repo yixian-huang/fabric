@@ -33,7 +33,7 @@ func main() {
 	fabricsBinder := fabricsModule.NewBinder(container.PG, container.Storage, cfg, logger)
 	setupBinder := setupModule.NewBinder(container.Setup)
 
-	r := router.New(container.JWT, baseBinder, fabricsBinder, setupBinder)
+	r := router.New(container.JWT, container.PG, baseBinder, fabricsBinder, setupBinder)
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,
 		Handler:           r,

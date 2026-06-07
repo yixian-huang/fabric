@@ -271,7 +271,7 @@ const searchForm = reactive({
 });
 
 const formatI18nOption = (option: any): string => {
-  return formatI18nOptionName(option.option_code, option.option_name);
+  return formatI18nOptionName(option.option_code, option.option_name, option.option_name_zh);
 };
 
 const hasValue = (val: unknown): boolean => {

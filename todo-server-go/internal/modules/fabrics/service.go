@@ -122,6 +122,26 @@ func (s *Service) RecordVisit(ip, userAgent, page string, now time.Time) bool {
 	return err == nil && recorded
 }
 
+func (s *Service) RecordAccess(rec AccessRecord, dedup bool) bool {
+	if rec.VisitedAt.IsZero() {
+		rec.VisitedAt = time.Now().UTC()
+	}
+	recorded, err := s.store.RecordAccess(context.Background(), rec, dedup)
+	return err == nil && recorded
+}
+
+func (s *Service) AnalyticsSummary(from, to time.Time) (AnalyticsSummary, error) {
+	return s.store.AnalyticsSummary(context.Background(), from, to)
+}
+
+func (s *Service) AnalyticsDimensions(q AnalyticsQuery) ([]DimensionRow, error) {
+	return s.store.AnalyticsDimensions(context.Background(), q)
+}
+
+func (s *Service) AnalyticsTrends(q AnalyticsQuery) ([]TrendPoint, error) {
+	return s.store.AnalyticsTrends(context.Background(), q)
+}
+
 func (s *Service) VisitorStats(now time.Time) VisitorStats {
 	stats, err := s.store.VisitorStats(context.Background(), now)
 	if err != nil {
@@ -297,8 +317,8 @@ func (s *Service) CreateOption(in OptionInput) (Option, error) {
 	return s.store.CreateOption(context.Background(), in)
 }
 
-func (s *Service) UpdateOption(optionID string, name *string, sortOrder *int) (Option, error) {
-	return s.store.UpdateOption(context.Background(), optionID, name, sortOrder)
+func (s *Service) UpdateOption(optionID string, name *string, nameZh *string, sortOrder *int) (Option, error) {
+	return s.store.UpdateOption(context.Background(), optionID, name, nameZh, sortOrder)
 }
 
 func (s *Service) DeleteOption(optionID string) error {

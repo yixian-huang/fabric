@@ -139,7 +139,16 @@ export function parseSharedFavoritesResponse(res: {
  * @param optionName 选项名称（可选）
  * @returns 格式化后的国际化文本
  */
-export function formatI18nOptionName(optionCode: string, optionName?: string): string {
+export function formatI18nOptionName(
+  optionCode: string,
+  optionName?: string,
+  optionNameZh?: string,
+): string {
+  const locale = i18n.global.locale.value;
+  if ((locale === 'zh' || String(locale).startsWith('zh')) && optionNameZh) {
+    return optionNameZh;
+  }
+
   const optionNameKey = `fabric.${optionCode}`;
   const translated = i18n.global.t(optionNameKey);
 

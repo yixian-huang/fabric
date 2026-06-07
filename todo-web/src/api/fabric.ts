@@ -146,11 +146,16 @@ export function deleteOption(id: string) {
  * @param pageInfo 页面信息，包含访问的页面名称
  * @returns Promise
  */
-export function recordVisit(pageInfo = { page: 'fabric_preview' }) {
+export function recordVisit(pageInfo: { page?: string; url?: string; referrer?: string } = {}) {
+  const payload = {
+    page: pageInfo.page || 'fabric_preview',
+    url: pageInfo.url || (typeof window !== 'undefined' ? window.location.pathname : ''),
+    referrer: pageInfo.referrer || (typeof document !== 'undefined' ? document.referrer : ''),
+  };
   return request({
     url: '/fabrics/record_visit',
     method: 'post',
-    data: pageInfo
+    data: payload,
   });
 }
 

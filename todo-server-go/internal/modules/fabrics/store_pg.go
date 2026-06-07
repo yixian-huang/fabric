@@ -8,12 +8,14 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"todo-server-go/internal/infra/analytics"
 	"todo-server-go/internal/infra/storage"
 )
 
 type pgStore struct {
-	pool    *pgxpool.Pool
-	storage storage.Store
+	pool       *pgxpool.Pool
+	storage    storage.Store
+	_accessRec *analytics.Recorder
 }
 
 func newPGStore(pool *pgxpool.Pool, store storage.Store) *pgStore {
@@ -21,16 +23,16 @@ func newPGStore(pool *pgxpool.Pool, store storage.Store) *pgStore {
 }
 
 var categoryLabels = map[string]string{
-	"component": "Component",
-	"style":     "Style",
-	"process":   "Process",
+	"component": "成分",
+	"style":     "布面风格",
+	"process":   "工艺",
 }
 
 func (s *pgStore) ListFabrics(ctx context.Context) ([]Fabric, error) {
 	rows, err := s.pool.Query(ctx, `
 		SELECT fabric_id::text, code, COALESCE(reference_code, ''), merchant_code,
 		       COALESCE(weight, 0), weight_unit, fabric_type, style_codes, process_codes,
-		       remark, width, yarn_count, density, created_at, main_image_id::text
+		       remark, width, yarn_count, density, created_at, main_image_id::text, vendor_id::text
 		FROM fabrics
 		ORDER BY created_at DESC`)
 	if err != nil {
@@ -94,13 +96,13 @@ func (s *pgStore) ListOptions(ctx context.Context, category string) ([]Option, e
 	var err error
 	if category != "" {
 		rows, err = s.pool.Query(ctx, `
-			SELECT option_id::text, category_code, option_code, option_name, sort_order
+			SELECT option_id::text, category_code, option_code, option_name, option_name_zh, sort_order
 			FROM options
 			WHERE category_code = $1
 			ORDER BY sort_order, option_code`, category)
 	} else {
 		rows, err = s.pool.Query(ctx, `
-			SELECT option_id::text, category_code, option_code, option_name, sort_order
+			SELECT option_id::text, category_code, option_code, option_name, option_name_zh, sort_order
 			FROM options
 			ORDER BY category_code, sort_order, option_code`)
 	}
@@ -112,7 +114,7 @@ func (s *pgStore) ListOptions(ctx context.Context, category string) ([]Option, e
 	out := make([]Option, 0)
 	for rows.Next() {
 		var o Option
-		if err := rows.Scan(&o.OptionID, &o.CategoryCode, &o.OptionCode, &o.OptionName, &o.SortOrder); err != nil {
+		if err := rows.Scan(&o.OptionID, &o.CategoryCode, &o.OptionCode, &o.OptionName, &o.OptionNameZh, &o.SortOrder); err != nil {
 			return nil, err
 		}
 		o.CategoryLabel = categoryLabels[o.CategoryCode]
@@ -178,26 +180,12 @@ func (s *pgStore) ToggleFavorite(ctx context.Context, userID, fabricID string) (
 }
 
 func (s *pgStore) RecordVisit(ctx context.Context, ip, userAgent, page string, now time.Time) (bool, error) {
-	if page == "" {
-		page = "fabric_preview"
-	}
-	var recent bool
-	err := s.pool.QueryRow(ctx, `
-		SELECT EXISTS (
-			SELECT 1 FROM visitor_logs
-			WHERE ip_address = $1 AND user_agent = $2 AND page = $3
-			  AND visited_at > $4
-		)`, ip, userAgent, page, now.Add(-visitDedupTTL)).Scan(&recent)
-	if err != nil {
-		return false, err
-	}
-	if recent {
-		return false, nil
-	}
-	_, err = s.pool.Exec(ctx, `
-		INSERT INTO visitor_logs (ip_address, user_agent, page, visited_at)
-		VALUES ($1, $2, $3, $4)`, ip, userAgent, page, now)
-	return err == nil, err
+	return s.RecordAccess(ctx, AccessRecord{
+		IP:        ip,
+		UserAgent: userAgent,
+		Page:      page,
+		VisitedAt: now,
+	}, true)
 }
 
 func (s *pgStore) VisitorStats(ctx context.Context, now time.Time) (VisitorStats, error) {

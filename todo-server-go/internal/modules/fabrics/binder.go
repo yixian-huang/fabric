@@ -35,6 +35,9 @@ func (b *Binder) Bind(r chi.Router, auth func(http.Handler) http.Handler) {
 		cr.With(auth).Get("/check_fabric_code", b.handler.CheckFabricCode)
 		cr.With(auth).Post("/toggle_favorite", b.handler.ToggleFavorite)
 		cr.With(auth).Get("/visitor_stats", b.handler.VisitorStats)
+		cr.With(auth).Get("/analytics/summary", b.handler.AnalyticsSummary)
+		cr.With(auth).Get("/analytics/dimensions", b.handler.AnalyticsDimensions)
+		cr.With(auth).Get("/analytics/trends", b.handler.AnalyticsTrends)
 		cr.Post("/record_visit", b.handler.RecordVisit)
 		cr.Post("/inquiry", b.handler.SubmitInquiry)
 

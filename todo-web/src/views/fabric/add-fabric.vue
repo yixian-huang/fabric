@@ -43,6 +43,37 @@
                   @change="handleImageChange"
                 />
               </div>
+              <div class="mt-4">
+                <p class="text-sm font-medium text-gray-700 mb-2">{{ $t('fabric.extraImages') }}</p>
+                <p class="text-xs text-gray-400 mb-2">{{ $t('fabric.extraImagesHint') }}</p>
+                <div class="flex flex-wrap gap-2">
+                  <div
+                    v-for="(img, idx) in extraImagePreviews"
+                    :key="img.file_id || idx"
+                    class="relative w-20 h-20 border rounded overflow-hidden"
+                  >
+                    <img :src="img.url" class="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      class="absolute top-0 right-0 bg-red-500 text-white text-xs px-1"
+                      @click="removeExtraImage(idx)"
+                    >×</button>
+                  </div>
+                  <button
+                    type="button"
+                    class="w-20 h-20 border-2 border-dashed rounded flex items-center justify-center text-gray-400"
+                    @click="extraFileInput?.click()"
+                  >+</button>
+                </div>
+                <input
+                  ref="extraFileInput"
+                  type="file"
+                  class="hidden"
+                  accept="image/*"
+                  multiple
+                  @change="handleExtraImagesChange"
+                />
+              </div>
             </div>
             <!-- 右侧基础信息区域 -->
             <div class="lg:col-span-2">
@@ -71,6 +102,24 @@
                       :placeholder="$t('fabric.merchantCode')"
                       class="w-full !rounded-button"
                     />
+                  </el-form-item>
+                </div>
+                <div>
+                  <el-form-item :label="$t('fabric.supplierOptional')" prop="vendor_id">
+                    <el-select
+                      v-model="fabricData.vendor_id"
+                      clearable
+                      filterable
+                      class="w-full"
+                      :placeholder="$t('fabric.supplierOptional')"
+                    >
+                      <el-option
+                        v-for="v in vendorOptions"
+                        :key="v.vendor_id"
+                        :label="v.name"
+                        :value="v.vendor_id"
+                      />
+                    </el-select>
                   </el-form-item>
                 </div>
                 <!-- 第二行 -->
@@ -333,6 +382,7 @@ import { useRouter, useRoute } from "vue-router";
 import { useI18n } from 'vue-i18n';
 // 引入 API
 import { addFabric, uploadFabricImage, getFabricDetail, updateFabric, getOptions, checkFabricCode } from "@/api/fabric";
+import { listVendors } from "@/api/vendor";
 import { filterOptionsByCategory, OPTION_CATEGORY } from "@/utils/fabric";
 
 const router = useRouter();
@@ -350,11 +400,15 @@ const imagePreview = ref<string>("");
 const uploadedImageUrl = ref<string>("");
 const imageFile = ref<File | null>(null);
 const imageFileId = ref<string | null>(null);
+const extraFileInput = ref<HTMLInputElement | null>(null);
+const extraImagePreviews = ref<{ file_id: string; url: string; file?: File }[]>([]);
+const vendorOptions = ref<{ vendor_id: string; name: string }[]>([]);
 
 const fabricData = reactive({
     code: "",
     merchant_code: "",
     reference_code: "",
+    vendor_id: "" as string | null,
     width: "",
     yarn_count: "",
     density: "",
@@ -398,7 +452,13 @@ const addComponent = () => {
 };
 
 const formatI18nOptionName = (optionCode: string) => {
-  const optionName = optionNameMap.value[optionCode];
+  const option = [...componentOptions.value, ...craftOptions.value, ...fabricStyleOptions.value]
+    .find((item) => item.option_code === optionCode);
+  const optionName = option?.option_name ?? optionNameMap.value[optionCode];
+  const optionNameZh = option?.option_name_zh;
+  if ((locale.value === 'zh' || String(locale.value).startsWith('zh')) && optionNameZh) {
+    return optionNameZh;
+  }
   const optionNameKey = `fabric.${optionCode}`;
   
   // 检查翻译键是否存在于当前语言包中
@@ -411,7 +471,7 @@ const formatI18nOptionName = (optionCode: string) => {
     return optionName;
   }
   // 使用t函数尝试翻译，同时提供兜底
-  return t(optionNameKey, { [optionNameKey]: optionName }) || optionName || optionCode;
+  return t(optionNameKey, { [optionNameKey]: optionName }) || optionNameZh || optionName || optionCode;
 };
 
 // 处理成分选择，自动关联name
@@ -564,6 +624,34 @@ const handlePaste = (event: ClipboardEvent) => {
   }
 };
 
+const handleExtraImagesChange = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const files = target.files;
+  if (!files?.length) return;
+  for (const file of Array.from(files)) {
+    if (file.size > 50 * 1024 * 1024) {
+      ElMessage.error(t('fabric.imageSizeLimit'));
+      continue;
+    }
+    try {
+      const response = await uploadFabricImage(file);
+      if (response.code === 200 && response.data?.file_id) {
+        extraImagePreviews.value.push({
+          file_id: response.data.file_id,
+          url: response.data.url,
+        });
+      }
+    } catch {
+      ElMessage.error(t('fabric.uploadImageFailed'));
+    }
+  }
+  target.value = '';
+};
+
+const removeExtraImage = (index: number) => {
+  extraImagePreviews.value.splice(index, 1);
+};
+
 // 修改上传图片到服务器的方法
 const uploadImage = async (): Promise<string | null> => {
   if (!imageFile.value) {
@@ -632,6 +720,8 @@ const saveForm = async () => {
       style_codes: fabricData.style_codes, // 发送选项编码数组
       process_codes: fabricData.process_codes, // 发送选项编码数组
       remark: fabricData.remark,
+      vendor_id: fabricData.vendor_id || null,
+      extra_image_ids: extraImagePreviews.value.map((img) => img.file_id),
       components: components.value.map(item => ({
         name: item.name,
         percentage: item.percentage,
@@ -708,6 +798,13 @@ const fetchFabricDetails = async (id: string) => {
       uploadedImageUrl.value = fetchedData.image_url || ""; // 用于重置
       // 如果有图片，需要保存其file_id以便后续操作
       imageFileId.value = fetchedData.image_file_id || null;
+      fabricData.vendor_id = fetchedData.vendor_id || null;
+      if (Array.isArray(fetchedData.extra_images)) {
+        extraImagePreviews.value = fetchedData.extra_images.map((img: any) => ({
+          file_id: img.file_id,
+          url: img.url,
+        }));
+      }
     } else {
       ElMessage.error(result.message || t('fabric.loadingFailed'));
       router.push('/admin/fabrics');
@@ -776,8 +873,10 @@ const validateTotalPercentage = () => {
 
 // 初始化
 onMounted(() => {
-  // 获取选项字典
   fetchOptions();
+  listVendors().then((res) => {
+    vendorOptions.value = (res as { data?: typeof vendorOptions.value }).data ?? [];
+  }).catch(() => undefined);
   
   // 添加粘贴事件监听器
   document.addEventListener('paste', handlePaste);

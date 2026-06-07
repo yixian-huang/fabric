@@ -12,6 +12,8 @@
       </template>
     </AdminPageHeader>
 
+    <AnalyticsPanel />
+
     <div class="stats-grid">
       <div v-for="stat in stats" :key="stat.label" class="stat-card fabric-surface">
         <span class="stat-card__value">{{ stat.value }}</span>
@@ -57,6 +59,7 @@ import { useRouter } from 'vue-router';
 import { Plus } from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue';
+import AnalyticsPanel from '@/components/admin/AnalyticsPanel.vue';
 import { getFabricList, getVisitorStats } from '@/api/fabric';
 import { parseFabricListResponse } from '@/utils/fabric';
 import { useUserStore } from '@/stores/user';

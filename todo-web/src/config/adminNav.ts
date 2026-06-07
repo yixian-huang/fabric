@@ -10,6 +10,8 @@ export const adminPrimaryNav: AdminNavItem[] = [
   { path: '/admin/fabrics', titleKey: 'admin.fabrics', icon: 'Grid' },
   { path: '/admin/options', titleKey: 'admin.options', icon: 'List' },
   { path: '/admin/suppliers', titleKey: 'admin.suppliers', icon: 'Shop' },
+  { path: '/admin/users', titleKey: 'admin.users', icon: 'User' },
+  { path: '/admin/settings', titleKey: 'admin.settings', icon: 'Setting' },
 ];
 
 export const adminMoreNav: AdminNavItem[] = [];

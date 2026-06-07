@@ -24,6 +24,8 @@ type FabricInput struct {
 	MerchantCode  string
 	ReferenceCode string
 	ImageFileID   *string
+	ExtraImageIDs []string
+	VendorID      *string
 	Weight        *float64
 	WeightUnit    string
 	FabricType    string
@@ -36,15 +38,18 @@ type FabricInput struct {
 	Components    []Component
 }
 
+const fabricSelectCols = `
+		fabric_id::text, code, COALESCE(reference_code, ''), merchant_code,
+		COALESCE(weight, 0), weight_unit, fabric_type, style_codes, process_codes,
+		remark, width, yarn_count, density, created_at, main_image_id::text, vendor_id::text`
+
 func (s *pgStore) GetFabricByReferenceCode(ctx context.Context, referenceCode string) (Fabric, error) {
 	referenceCode = strings.TrimSpace(referenceCode)
 	if referenceCode == "" {
 		return Fabric{}, ErrFabricNotFound
 	}
 	row := s.pool.QueryRow(ctx, `
-		SELECT fabric_id::text, code, COALESCE(reference_code, ''), merchant_code,
-		       COALESCE(weight, 0), weight_unit, fabric_type, style_codes, process_codes,
-		       remark, width, yarn_count, density, created_at, main_image_id::text
+		SELECT `+fabricSelectCols+`
 		FROM fabrics WHERE reference_code = $1`, referenceCode)
 
 	f, err := scanFabric(row)
@@ -86,9 +91,7 @@ func (s *pgStore) ListPublicReferenceCodes(ctx context.Context) ([]string, error
 
 func (s *pgStore) GetFabric(ctx context.Context, fabricID string) (Fabric, error) {
 	row := s.pool.QueryRow(ctx, `
-		SELECT fabric_id::text, code, COALESCE(reference_code, ''), merchant_code,
-		       COALESCE(weight, 0), weight_unit, fabric_type, style_codes, process_codes,
-		       remark, width, yarn_count, density, created_at, main_image_id::text
+		SELECT `+fabricSelectCols+`
 		FROM fabrics WHERE fabric_id = $1`, fabricID)
 
 	f, err := scanFabric(row)
@@ -104,6 +107,7 @@ func (s *pgStore) GetFabric(ctx context.Context, fabricID string) (Fabric, error
 	}
 	f.Components = components[f.FabricID]
 	attachImageURLs(&f)
+	s.attachFabricAdminMeta(ctx, &f)
 	return f, nil
 }
 
@@ -142,11 +146,11 @@ func (s *pgStore) CreateFabric(ctx context.Context, in FabricInput) (Fabric, err
 
 	_, err = tx.Exec(ctx, `
 		INSERT INTO fabrics (
-			fabric_id, code, reference_code, merchant_code, main_image_id,
+			fabric_id, code, reference_code, merchant_code, main_image_id, vendor_id,
 			weight, weight_unit, fabric_type, style_codes, process_codes, remark,
 			width, yarn_count, density
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
-		fabricID, code, refCode, strings.TrimSpace(in.MerchantCode), in.ImageFileID,
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+		fabricID, code, refCode, strings.TrimSpace(in.MerchantCode), in.ImageFileID, normalizeVendorID(in.VendorID),
 		weightVal, weightUnit, strings.TrimSpace(in.FabricType), styleJSON, processJSON, strings.TrimSpace(in.Remark),
 		strings.TrimSpace(in.Width), strings.TrimSpace(in.YarnCount), strings.TrimSpace(in.Density))
 	if err != nil {
@@ -158,6 +162,9 @@ func (s *pgStore) CreateFabric(ctx context.Context, in FabricInput) (Fabric, err
 	}
 
 	if err := replaceComponents(ctx, tx, fabricID, in.Components); err != nil {
+		return Fabric{}, err
+	}
+	if err := replaceExtraImages(ctx, tx, fabricID, in.ExtraImageIDs); err != nil {
 		return Fabric{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {
@@ -229,14 +236,21 @@ func (s *pgStore) UpdateFabric(ctx context.Context, fabricID string, in FabricIn
 	yarnCount := strings.TrimSpace(in.YarnCount)
 	density := strings.TrimSpace(in.Density)
 
+	vendorID := existing.VendorID
+	if in.VendorID != nil {
+		vendorID = normalizeVendorID(in.VendorID)
+	}
+
 	_, err = tx.Exec(ctx, `
 		UPDATE fabrics SET
 			code = $2, merchant_code = $3, main_image_id = COALESCE($4, main_image_id),
-			weight = $5, weight_unit = $6, fabric_type = $7,
-			style_codes = $8, process_codes = $9, remark = $10,
-			width = $11, yarn_count = $12, density = $13, updated_at = NOW()
+			vendor_id = $5,
+			weight = $6, weight_unit = $7, fabric_type = $8,
+			style_codes = $9, process_codes = $10, remark = $11,
+			width = $12, yarn_count = $13, density = $14, updated_at = NOW()
 		WHERE fabric_id = $1`,
-		fabricID, code, merchantCode, in.ImageFileID, weightVal, weightUnit, fabricType,
+		fabricID, code, merchantCode, in.ImageFileID, vendorID,
+		weightVal, weightUnit, fabricType,
 		styleJSON, processJSON, remark, width, yarnCount, density)
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -248,6 +262,11 @@ func (s *pgStore) UpdateFabric(ctx context.Context, fabricID string, in FabricIn
 
 	if in.Components != nil {
 		if err := replaceComponents(ctx, tx, fabricID, in.Components); err != nil {
+			return Fabric{}, err
+		}
+	}
+	if in.ExtraImageIDs != nil {
+		if err := replaceExtraImages(ctx, tx, fabricID, in.ExtraImageIDs); err != nil {
 			return Fabric{}, err
 		}
 	}
@@ -342,9 +361,10 @@ func scanFabric(row fabricScanner) (Fabric, error) {
 	var styleRaw, processRaw []byte
 	var fabricTypeRaw string
 	var mainImageID *string
+	var vendorID *string
 	if err := row.Scan(&f.FabricID, &f.Code, &f.ReferenceCode, &f.MerchantCode,
 		&f.Weight, &f.WeightUnit, &fabricTypeRaw, &styleRaw, &processRaw,
-		&f.Remark, &f.Width, &f.YarnCount, &f.Density, &f.CreatedAt, &mainImageID); err != nil {
+		&f.Remark, &f.Width, &f.YarnCount, &f.Density, &f.CreatedAt, &mainImageID, &vendorID); err != nil {
 		return Fabric{}, err
 	}
 	_ = json.Unmarshal(styleRaw, &f.StyleCodes)
@@ -354,6 +374,10 @@ func scanFabric(row fabricScanner) (Fabric, error) {
 	if mainImageID != nil && strings.TrimSpace(*mainImageID) != "" {
 		id := strings.TrimSpace(*mainImageID)
 		f.ImageFileID = &id
+	}
+	if vendorID != nil && strings.TrimSpace(*vendorID) != "" {
+		id := strings.TrimSpace(*vendorID)
+		f.VendorID = &id
 	}
 	return f, nil
 }

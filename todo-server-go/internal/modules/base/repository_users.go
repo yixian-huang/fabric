@@ -32,6 +32,8 @@ type userRecord struct {
 	Subscription  bool
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
+	LastVisitedAt *time.Time
+	FavoriteCount int
 }
 
 type RegisterUserInput struct {
@@ -141,8 +143,11 @@ func (r *pgUserRepository) ResendVerification(email string) (string, error) {
 func (r *pgUserRepository) ListUsers() ([]userRecord, error) {
 	ctx := context.Background()
 	rows, err := r.pool.Query(ctx, `
-		SELECT user_id, username, email, nickname, status, email_verified, email_subscription, created_at, updated_at
-		FROM users ORDER BY created_at DESC`)
+		SELECT u.user_id, u.username, u.email, u.nickname, u.status, u.email_verified,
+		       u.email_subscription, u.created_at, u.updated_at, u.last_visited_at,
+		       (SELECT COUNT(*) FROM fabric_favorites ff WHERE ff.user_id = u.user_id) AS favorite_count
+		FROM users u
+		ORDER BY u.created_at DESC`)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +156,7 @@ func (r *pgUserRepository) ListUsers() ([]userRecord, error) {
 	for rows.Next() {
 		var u userRecord
 		if err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.Nickname, &u.Status,
-			&u.EmailVerified, &u.Subscription, &u.CreatedAt, &u.UpdatedAt); err != nil {
+			&u.EmailVerified, &u.Subscription, &u.CreatedAt, &u.UpdatedAt, &u.LastVisitedAt, &u.FavoriteCount); err != nil {
 			return nil, err
 		}
 		out = append(out, u)

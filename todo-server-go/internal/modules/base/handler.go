@@ -16,14 +16,16 @@ import (
 )
 
 type Handler struct {
-	authSvc  *AuthService
-	imageSvc *ImageService
+	authSvc        *AuthService
+	imageSvc       *ImageService
+	settingsStore  *settingsStore
 }
 
-func NewHandler(authSvc *AuthService, imageSvc *ImageService) *Handler {
+func NewHandler(authSvc *AuthService, imageSvc *ImageService, settings *settingsStore) *Handler {
 	return &Handler{
-		authSvc:  authSvc,
-		imageSvc: imageSvc,
+		authSvc:       authSvc,
+		imageSvc:      imageSvc,
+		settingsStore: settings,
 	}
 }
 
@@ -296,4 +298,44 @@ func (h *Handler) DownloadFile(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", fmt.Sprintf(`%s; filename="%s"`, disposition, fileName))
 	w.WriteHeader(http.StatusOK)
 	_, _ = io.Copy(w, obj.Reader)
+}
+
+func (h *Handler) GetPublicSettings(w http.ResponseWriter, r *http.Request) {
+	settings, err := h.settingsStore.GetPublic(r.Context())
+	if err != nil {
+		response.JSON(w, http.StatusInternalServerError, 50001, "internal error", nil)
+		return
+	}
+	response.JSON(w, http.StatusOK, 200, "ok", settings)
+}
+
+func (h *Handler) GetSettings(w http.ResponseWriter, r *http.Request) {
+	settings, err := h.settingsStore.GetAll(r.Context())
+	if err != nil {
+		response.JSON(w, http.StatusInternalServerError, 50001, "internal error", nil)
+		return
+	}
+	response.JSON(w, http.StatusOK, 200, "ok", maskSettings(settings))
+}
+
+func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
+	var req SystemSettings
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.JSON(w, http.StatusBadRequest, 40001, "invalid request body", nil)
+		return
+	}
+	existing, err := h.settingsStore.GetAll(r.Context())
+	if err != nil {
+		response.JSON(w, http.StatusInternalServerError, 50001, "internal error", nil)
+		return
+	}
+	if req.SmtpPassword == "********" || req.SmtpPassword == "" {
+		req.SmtpPassword = existing.SmtpPassword
+	}
+	if err := h.settingsStore.Save(r.Context(), req); err != nil {
+		response.JSON(w, http.StatusInternalServerError, 50001, "internal error", nil)
+		return
+	}
+	updated, _ := h.settingsStore.GetAll(r.Context())
+	response.JSON(w, http.StatusOK, 200, "保存成功", maskSettings(updated))
 }

@@ -19,7 +19,8 @@ func NewBinder(pool *pgxpool.Pool, jwtSvc *auth.JWT, store storage.Store) *Binde
 	imageRepo := NewPGImageRepository(pool)
 	authSvc := NewAuthService(userRepo, jwtSvc)
 	imageSvc := NewImageService(imageRepo, store)
-	return &Binder{handler: NewHandler(authSvc, imageSvc)}
+	settings := newSettingsStore(pool)
+	return &Binder{handler: NewHandler(authSvc, imageSvc, settings)}
 }
 
 func (b *Binder) Bind(r chi.Router, authMw func(http.Handler) http.Handler) {
@@ -41,6 +42,9 @@ func (b *Binder) Bind(r chi.Router, authMw func(http.Handler) http.Handler) {
 			r.Delete("/{user_id}", b.handler.DeleteUser)
 		})
 		r.With(authMw).Get("/me/favorite-count", b.handler.FavoriteCount)
+		r.Get("/settings/public", b.handler.GetPublicSettings)
+		r.With(authMw).Get("/settings", b.handler.GetSettings)
+		r.With(authMw).Put("/settings", b.handler.UpdateSettings)
 		r.Route("/images", func(r chi.Router) {
 			r.With(authMw).Post("/upload", b.handler.UploadImage)
 			r.With(authMw).Post("/upload/", b.handler.UploadImage)

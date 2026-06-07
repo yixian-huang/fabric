@@ -107,7 +107,7 @@ import FabricTable from '@/components/FabricTable.vue';
 import FabricSearchForm from '@/components/FabricSearchForm.vue';
 import FabricCardGrid from '@/components/fabric/FabricCardGrid.vue';
 import ThemeSwitcher from '@/components/fabric/ThemeSwitcher.vue';
-import { getPublicFabricList, recordVisit } from '@/api/fabric';
+import { getPublicFabricList } from '@/api/fabric';
 import { useFabricList } from '@/composables/useFabricList';
 import { useFabricTheme } from '@/composables/useFabricTheme';
 import { usePageSeo } from '@/composables/usePageSeo';
@@ -175,9 +175,6 @@ const handleCardScroll = () => {
 
 onMounted(() => {
   fetchFabricList(false);
-  recordVisit().catch((error) => {
-    console.error('访客记录失败:', error);
-  });
 });
 </script>
 

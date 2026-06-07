@@ -165,5 +165,7 @@ func mapUserRecord(rec userRecord) UserDetail {
 		EmailVerified: rec.EmailVerified,
 		CreatedAt:     rec.CreatedAt,
 		UpdatedAt:     rec.UpdatedAt,
+		LastVisitedAt: rec.LastVisitedAt,
+		FavoriteCount: rec.FavoriteCount,
 	}
 }
