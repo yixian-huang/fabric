@@ -16,7 +16,8 @@ RUN pnpm install
 # 复制项目文件
 COPY . .
 
-ARG VITE_API_BASE_URL=http://172.81.57.29:18081/api
+# 生产默认；QB 测试环境须传 buildArgs: VITE_API_BASE_URL=http://172.81.57.29:18081/api
+ARG VITE_API_BASE_URL=https://fabricoption.com/api
 ENV NODE_ENV=production
 ENV VITE_I18N_DEBUG=false
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL

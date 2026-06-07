@@ -1,0 +1,14 @@
+{
+  "repoUrl": "https://github.com/yixian-huang/fabric.git",
+  "environmentName": "fabric-web-prod",
+  "imageName": "fabric-web-prod",
+  "containerName": "fabric-web-prod",
+  "workDir": "/home/fabric-web-prod",
+  "dockerfile": "todo-web/Dockerfile",
+  "buildContext": "todo-web",
+  "buildServerName": "172.81.57.29",
+  "deployServerNames": ["Goddady - Fabric"],
+  "ports": ["127.0.0.1:18083:80"],
+  "healthCheckUrl": "https://fabricoption.com/",
+  "postDeployScript": "set -euo pipefail\nSTATIC=\"/opt/1panel/apps/openresty/openresty/www/sites/fabricoption.com/index/dist\"\nIMAGE_TAG=\"${IMAGE:-fabric-web-prod:latest}\"\nmkdir -p \"$STATIC\"\nrm -rf \"$STATIC\"/*\ncid=$(docker create \"$IMAGE_TAG\")\ndocker cp \"${cid}:/usr/share/nginx/html/.\" \"$STATIC/\"\ndocker rm \"$cid\" >/dev/null\necho \"synced web dist to $STATIC\"\n"
+}
